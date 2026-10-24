@@ -182,6 +182,49 @@ describe('parseStatement (synthetic layouts)', () => {
     ]);
   });
 
+  it('reads dates with times, a "C" rupee glyph and "+" credits (HDFC-like)', () => {
+    const pages = [
+      {
+        items: [
+          item('Billing Period', 192, 700, 37),
+          item('24 Sep, 2026 - 23 Oct, 2026', 298, 700, 79),
+          item('TOTAL AMOUNT DUE', 446, 615, 62),
+          item('C', 168, 592, 4),
+          item('17,935.73', 172, 592, 33),
+          item('=', 424, 592, 5),
+          item('C', 446, 592, 7),
+          item('18,824.00', 453, 592, 61),
+          item('DATE & TIME', 170, 226, 38),
+          item('TRANSACTION DESCRIPTION', 260, 226, 83),
+          item('AMOUNT', 528, 226, 28),
+          item('PI', 567, 226, 6),
+          item('23/09/2026| 13:24', 170, 196, 55),
+          item('SwiggyBENGALURU', 260, 196, 56),
+          item('C', 532, 196, 3),
+          item('629.00', 537, 196, 20),
+          item('l', 567, 196, 5),
+          item('25/09/2026| 00:00', 170, 182, 55),
+          item('10% Swiggy CashBack', 260, 182, 62),
+          item('+', 529, 182, 3),
+          item('C', 535, 182, 3),
+          item('62.90', 540, 182, 16),
+          item('05/10/2026| 22:43', 170, 168, 55),
+          item('BPPY PYMT BD0000000000 (Ref# 000000000000001)', 260, 168, 185),
+          item('+', 510, 168, 3),
+          item('C', 516, 168, 3),
+          item('14,590.00', 521, 168, 28),
+        ],
+      },
+    ];
+    const { transactions, meta } = parseStatement(pages);
+    expect(meta).toMatchObject({ periodStart: '2026-09-24', periodEnd: '2026-10-23', totalDuePaise: 1882400 });
+    expect(transactions.map((t) => [t.date, t.description, t.amountPaise, t.kind])).toEqual([
+      ['2026-09-23', 'SwiggyBENGALURU', 62900, TXN_KIND.CHARGE],
+      ['2026-09-25', '10% Swiggy CashBack', -6290, TXN_KIND.CREDIT],
+      ['2026-10-05', 'BPPY PYMT BD0000000000 (Ref# 000000000000001)', -1459000, TXN_KIND.PAYMENT],
+    ]);
+  });
+
   it('falls back to date + amount when there is no header', () => {
     const pages = [
       {
@@ -208,6 +251,7 @@ const axisPath = `${SAMPLES}/Axis bank sample statement.pdf`;
 const iciciPath = `${SAMPLES}/ICICI bank sample statement.pdf`;
 const sbiPath = `${SAMPLES}/SBI bank sample statement.pdf`;
 const yesPath = `${SAMPLES}/Yes Bank sample statement.pdf`;
+const hdfcPath = `${SAMPLES}/HDFC bank sample statement.pdf`;
 
 async function parseFile(path) {
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
@@ -302,5 +346,24 @@ describe.skipIf(!existsSync(yesPath))('Yes Bank sample statement', () => {
     expect(transactions.filter((t) => t.kind === TXN_KIND.PAYMENT).map((t) => t.amountPaise)).toEqual([-438610]);
     expect(transactions.at(-1)).toMatchObject({ description: 'GOODS & SERVICES TAX - GST @ 18%', amountPaise: 5683 });
     expect(sum(transactions.filter((t) => t.kind !== TXN_KIND.PAYMENT))).toBe(707965);
+  });
+});
+
+describe.skipIf(!existsSync(hdfcPath))('HDFC sample statement', () => {
+  it('extracts every row across pages, with times, "C" rupee glyphs and "+" credits', async () => {
+    const { transactions, meta } = await parseFile(hdfcPath);
+    expect(meta).toMatchObject({
+      cardName: 'Swiggy HDFC Bank Credit Card',
+      last4: expect.stringMatching(/^\d{4}$/),
+      periodStart: '2026-09-24',
+      periodEnd: '2026-10-23',
+      totalDuePaise: 1882400,
+    });
+    expect(transactions).toHaveLength(65);
+    expect(transactions[0]).toMatchObject({ date: '2026-09-23', description: 'SwiggyBENGALURU', amountPaise: 62900, kind: TXN_KIND.CHARGE });
+    expect(transactions.filter((t) => t.kind === TXN_KIND.PAYMENT).map((t) => t.amountPaise)).toEqual([-1459000]);
+    expect(transactions.at(-1)).toMatchObject({ date: '2026-10-23', amountPaise: 10400, kind: TXN_KIND.CHARGE });
+    // Total due 18,824 = 18,823.15 of new items + 0.41 left from the previous bill, rounded up by HDFC.
+    expect(sum(transactions.filter((t) => t.kind !== TXN_KIND.PAYMENT))).toBe(1882315);
   });
 });

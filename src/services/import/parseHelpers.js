@@ -117,7 +117,7 @@ export function signedStatementPaise(parsed) {
 }
 
 const PAYMENT_PATTERN =
-  /(payment\s+(received|recd|recieved|thank)|bbps\s+payment|auto\s*pay|autodebit|auto\s+debit|thank\s+you\s+for\s+(your\s+)?payment|(neft|imps|upi|online)\s+payment|payment\s+-?\s*(neft|imps|upi)|^payment\b|cc\s+payment|bill\s*payment\s+received|infinity\s+payment)/i;
+  /(payment\s+(received|recd|recieved|thank)|bbps\s+payment|auto\s*pay|autodebit|auto\s+debit|thank\s+you\s+for\s+(your\s+)?payment|(neft|imps|upi|online)\s+payment|payment\s+-?\s*(neft|imps|upi)|^payment\b|cc\s+payment|bill\s*payment\s+received|infinity\s+payment|bppy\s+pymt)/i;
 
 /** Whether a credit line is a payment towards the bill (as opposed to a refund or cashback). */
 export function isBillPayment(description) {

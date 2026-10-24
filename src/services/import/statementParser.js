@@ -56,19 +56,54 @@ export function buildLines(items) {
   return lines;
 }
 
-/** Split items like "16/09/2026 MAKEMYTRIP" into a date item and a text item. */
+/**
+ * Split items like "16/09/2026 MAKEMYTRIP" into a date item and a text item, dropping a time
+ * printed with the date ("23/09/2026| 13:24", as on HDFC statements).
+ */
 function splitLeadingDates(items) {
-  const re = new RegExp(`^(${DATE_PATTERN})\\s+(.+)$`);
+  const re = new RegExp(`^(${DATE_PATTERN})(\\s*[|,]?\\s*\\d{1,2}:\\d{2}(?::\\d{2})?(?:\\s*[AP]M)?)?(?:\\s+(.+))?$`, 'i');
   return items.flatMap((it) => {
     const m = re.exec(it.str);
-    if (!m || !parseDate(m[1])) return [it];
-    const ratio = m[1].length / it.str.length;
-    const dateW = it.w * ratio;
-    return [
-      { ...it, str: m[1], w: dateW },
-      { ...it, str: m[2], x: it.x + dateW + 2, w: it.w - dateW - 2 },
-    ];
+    if (!m || (!m[2] && !m[3]) || !parseDate(m[1])) return [it];
+    const dateW = it.w * ((m[1].length + (m[2]?.length ?? 0)) / it.str.length);
+    const date = { ...it, str: m[1], w: dateW };
+    return m[3] ? [date, { ...it, str: m[3], x: it.x + dateW + 2, w: it.w - dateW - 2 }] : [date];
   });
+}
+
+const CURRENCY_GLYPH = /^(?:c|`|₹|rs\.?|inr)$/i; // the ₹ sign comes out as "C" or "`" in some fonts
+const gap = (a, b) => b.x - (a.x + a.w);
+
+/**
+ * Join a currency sign and a "+" printed as separate items just before an amount
+ * ("+ C 62.90" on HDFC statements, where "+" marks a credit) into the amount itself.
+ * A "C" right after an amount is SBI's credit marker instead, and is left to attachMarkers.
+ */
+function attachPrefixes(items) {
+  const out = [];
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    const next = items[i + 1];
+    const prev = out.at(-1);
+    if (CURRENCY_GLYPH.test(it.str) && next && isAmountItem(next) && gap(it, next) < 6) {
+      const markerOfPrev = prev && isAmountItem(prev) && gap(prev, it) < gap(it, next);
+      if (!markerOfPrev) {
+        const credit = prev?.str === '+' && gap(prev, it) < 6;
+        if (credit) out.pop();
+        const start = credit ? prev : it;
+        out.push({ ...next, str: credit ? `${next.str} Cr` : next.str, x: start.x, w: next.x + next.w - start.x });
+        i++;
+        continue;
+      }
+    }
+    if (it.str === '+' && next && isAmountItem(next) && gap(it, next) < 6) {
+      out.push({ ...next, str: `${next.str} Cr`, x: it.x, w: next.x + next.w - it.x });
+      i++;
+      continue;
+    }
+    out.push(it);
+  }
+  return out;
 }
 
 /** Merge header fragments that sit next to each other ("Amount (in" + "`" + ")"). */
@@ -154,7 +189,7 @@ function closestTo(column, items) {
  * (SBI lists GST lines under the fee they belong to) to take the previous row's date.
  */
 function parseRow(line, header, inheritDate = null) {
-  const items = attachMarkers(splitLeadingDates(line.items));
+  const items = attachMarkers(attachPrefixes(splitLeadingDates(line.items)));
   const dateIndex = items.findIndex((it) => parseDate(it.str) && (!header || it.x >= header.left));
   let date;
   let rest;
@@ -252,13 +287,13 @@ function findTotalDue(lines) {
     const labelItem = lines[i].items.find((it) => label.test(it.str) && !/minimum/i.test(it.str));
     if (!labelItem) continue;
     // Same line, to the right of the label.
-    const sameLine = attachMarkers(lines[i].items.filter((it) => it.x > labelItem.x + labelItem.w - 1));
+    const sameLine = attachMarkers(attachPrefixes(lines[i].items).filter((it) => it.x > labelItem.x + labelItem.w - 1));
     const right = sameLine.find(isAmountItem);
     if (right) return signedStatementPaise(parseAmount(right.str));
     // Lines below, roughly under the label.
     for (let j = i + 1; j < Math.min(lines.length, i + 4); j++) {
       if (lines[i].y - lines[j].y > 40) break;
-      const below = attachMarkers(lines[j].items).find(
+      const below = attachMarkers(attachPrefixes(lines[j].items)).find(
         (it) => isAmountItem(it) && Math.abs(center(it) - center(labelItem)) < 50,
       );
       if (below) return signedStatementPaise(parseAmount(below.str));
