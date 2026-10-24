@@ -4,13 +4,16 @@ import { RouterProvider } from 'react-router-dom';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import { router } from './app/routes';
+import UserProvider from './features/user/UserProvider';
 import { theme } from './theme';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <RouterProvider router={router} />
+      <UserProvider>
+        <RouterProvider router={router} />
+      </UserProvider>
     </ThemeProvider>
   </StrictMode>,
 );

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { storage } from '../../services/storage';
 import { deriveStatus } from '../../services/calculations/reconciliation';
 import { createAdjustment, createCard, createPerson, createTransaction, normalizeReconciliation } from '../model';
+import { withMe } from '../user/currentUser';
 
 const sameName = (a, b) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
@@ -13,10 +14,11 @@ const RETRY_DELAY_MS = 3000;
  * no debounce: a debounce window is a window in which closing the tab loses data. Writes are
  * serialised — while one is in flight, only the latest state is queued.
  * Mount it with `key={id}` so switching reconciliations starts from fresh state.
+ * `currentUser` (if signed in) is added to the reconciliation's people when it loads.
  * saveStatus: 'saved' | 'saving' | 'error'
  * loadState:  'loading' | 'ready' | 'missing' | 'error'
  */
-export function useReconciliation(id) {
+export function useReconciliation(id, currentUser = null) {
   const [rec, setRec] = useState(null);
   const [loadState, setLoadState] = useState('loading');
   const [saveStatus, setSaveStatus] = useState('saved');
@@ -56,12 +58,18 @@ export function useReconciliation(id) {
     Promise.all([storage.getReconciliation(id), storage.listPeople()])
       .then(([stored, people]) => {
         if (cancelled) return;
-        const data = normalizeReconciliation(stored) ?? null;
+        const normalized = normalizeReconciliation(stored) ?? null;
+        // Make sure the signed-in person is part of every reconciliation they open.
+        const data = withMe(normalized, currentUser);
         recRef.current = data;
         savedPeopleRef.current = people;
         setRec(data);
         setSavedPeople(people);
         setLoadState(data ? 'ready' : 'missing');
+        if (data !== normalized) {
+          pendingRef.current = data;
+          flush();
+        }
       })
       .catch((err) => {
         console.error('Failed to load reconciliation', err);
@@ -71,7 +79,7 @@ export function useReconciliation(id) {
       cancelled = true;
       flush();
     };
-  }, [id, flush]);
+  }, [id, currentUser, flush]);
 
   // Warn before leaving while a save is still in flight or has failed.
   useEffect(() => {

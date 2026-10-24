@@ -38,7 +38,7 @@ export default function AdjustmentsSection({ rec, onAdd, onEdit, onDelete }) {
             Not part of any card statement — included in person totals only.
           </Typography>
         </div>
-        <Button startIcon={<Add />} onClick={onAdd} sx={{ whiteSpace: 'nowrap' }}>
+        <Button variant="outlined" startIcon={<Add />} onClick={onAdd}>
           Add adjustment
         </Button>
       </Stack>

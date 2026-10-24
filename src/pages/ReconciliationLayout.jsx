@@ -4,6 +4,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import { useReconciliation } from '../features/reconciliations/useReconciliation';
+import { useCurrentUser } from '../features/user/currentUser';
 
 /** Loads the reconciliation once and shares it (plus auto-saving actions) with child routes. */
 export default function ReconciliationLayout() {
@@ -12,7 +13,8 @@ export default function ReconciliationLayout() {
 }
 
 function LoadedReconciliation({ id }) {
-  const recState = useReconciliation(id);
+  const { user } = useCurrentUser();
+  const recState = useReconciliation(id, user);
 
   if (recState.loadState === 'loading') {
     return (

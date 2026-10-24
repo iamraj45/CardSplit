@@ -1,6 +1,14 @@
-import { Outlet, Link as RouterLink } from 'react-router-dom';
+import { useState } from 'react';
+import { Outlet, Link as RouterLink, useNavigate } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import AccountCircleOutlined from '@mui/icons-material/AccountCircleOutlined';
+import LogoutOutlined from '@mui/icons-material/LogoutOutlined';
+import { useCurrentUser } from '../features/user/currentUser';
 import Container from '@mui/material/Container';
 import GlobalStyles from '@mui/material/GlobalStyles';
 import Toolbar from '@mui/material/Toolbar';
@@ -26,6 +34,40 @@ const printStyles = (
   />
 );
 
+function UserMenu() {
+  const { user, signOut } = useCurrentUser();
+  const navigate = useNavigate();
+  const [anchor, setAnchor] = useState(null);
+  if (!user) return null;
+  return (
+    <>
+      <Button
+        color="inherit"
+        startIcon={<AccountCircleOutlined />}
+        onClick={(e) => setAnchor(e.currentTarget)}
+        aria-label={`Signed in as ${user.name}`}
+        sx={{ ml: 'auto' }}
+      >
+        {user.name}
+      </Button>
+      <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}>
+        <MenuItem
+          onClick={() => {
+            setAnchor(null);
+            signOut();
+            navigate('/login');
+          }}
+        >
+          <ListItemIcon>
+            <LogoutOutlined fontSize="small" />
+          </ListItemIcon>
+          Switch user
+        </MenuItem>
+      </Menu>
+    </>
+  );
+}
+
 export default function App() {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', '@media print': { bgcolor: '#fff' } }}>
@@ -37,10 +79,12 @@ export default function App() {
             variant="h6"
             component={RouterLink}
             to="/"
+            noWrap
             sx={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}
           >
             Card Reconciliation
           </Typography>
+          <UserMenu />
         </Toolbar>
       </AppBar>
       <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 4 }, '@media print': { p: 0, maxWidth: 'none' } }}>

@@ -8,6 +8,7 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import PersonPicker from './PersonPicker';
+import { findMe, useCurrentUser } from '../features/user/currentUser';
 import {
   FULL_PERCENT_BP,
   SPLIT_METHODS,
@@ -25,6 +26,8 @@ const METHOD_OPTIONS = [
   { value: SPLIT_METHODS.CUSTOM, label: 'Custom' },
 ];
 
+const ME = 'me';
+
 const usesInputs = (method) => method === SPLIT_METHODS.PERCENTAGE || method === SPLIT_METHODS.CUSTOM;
 
 /**
@@ -34,6 +37,26 @@ const usesInputs = (method) => method === SPLIT_METHODS.PERCENTAGE || method ===
  */
 export default function SplitEditor({ draft, onChange, amountPaise, people, savedPeople, onAddPerson, evaluation, showErrors }) {
   const sharesById = new Map((evaluation?.result?.shares ?? []).map((s) => [s.personId, s.paise]));
+  const { user } = useCurrentUser();
+  const me = findMe(people, user);
+  const isMe = draft.method === SPLIT_METHODS.SINGLE && me && draft.personIds[0] === me.id;
+  const options = user
+    ? [METHOD_OPTIONS[0], { value: ME, label: `${user.name} (me)` }, ...METHOD_OPTIONS.slice(1)]
+    : METHOD_OPTIONS;
+
+  const selectOption = (value) => {
+    if (value === ME) {
+      // One click: the whole amount to the signed-in person (added to this reconciliation if needed).
+      const person = me ?? onAddPerson({ id: user.personId, name: user.name });
+      if (person) onChange({ ...draft, method: SPLIT_METHODS.SINGLE, personIds: [person.id] });
+      return;
+    }
+    if (value === SPLIT_METHODS.SINGLE && isMe) {
+      onChange({ ...draft, personIds: [] }); // "One person" from "me": let them pick someone else
+      return;
+    }
+    setMethod(value);
+  };
 
   const setMethod = (value) => {
     const method = value === 'none' ? null : value;
@@ -90,11 +113,11 @@ export default function SplitEditor({ draft, onChange, amountPaise, people, save
       <ToggleButtonGroup
         exclusive
         size="small"
-        value={draft.method ?? 'none'}
-        onChange={(_, value) => value && setMethod(value)}
+        value={isMe ? ME : (draft.method ?? 'none')}
+        onChange={(_, value) => value && selectOption(value)}
         sx={{ flexWrap: 'wrap' }}
       >
-        {METHOD_OPTIONS.map((o) => (
+        {options.map((o) => (
           <ToggleButton key={o.value} value={o.value} sx={{ textTransform: 'none', px: 1.5 }}>
             {o.label}
           </ToggleButton>

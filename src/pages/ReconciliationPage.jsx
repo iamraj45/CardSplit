@@ -41,7 +41,6 @@ import {
 import { storage } from '../services/storage';
 import { nextGradientKey } from '../theme/cardGradients';
 import { formatINR } from '../utils/currency';
-import { formatDate, formatPeriod } from '../utils/dates';
 
 export default function ReconciliationPage() {
   const navigate = useNavigate();
@@ -96,19 +95,14 @@ export default function ReconciliationPage() {
             </Typography>
             <Chip size="small" label={status.label} color={status.color} />
           </Stack>
-          <Typography color="text.secondary">
-            {formatPeriod(rec.periodStart, rec.periodEnd) !== rec.name &&
-              `${formatPeriod(rec.periodStart, rec.periodEnd)} · `}
-            {formatDate(rec.periodStart)} – {formatDate(rec.periodEnd)}
-          </Typography>
         </Box>
         <Stack direction="row" sx={{ alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
           <SaveStatus status={saveStatus} />
-          <Button size="small" startIcon={<EditOutlined />} onClick={() => open('details')}>
+          <Button variant="outlined" startIcon={<EditOutlined />} onClick={() => open('details')}>
             Edit
           </Button>
           <Button
-            size="small"
+            variant="outlined"
             startIcon={<DownloadOutlined />}
             onClick={() => saveNow().then(() => exportBackupFile(rec))}
           >
@@ -204,7 +198,9 @@ export default function ReconciliationPage() {
         </Grid>
       </Grid>
 
-      {rec.cards.length > 0 && <ChecksPanel checks={runChecks(rec)} onOpenCard={(cardId) => navigate(`card/${cardId}`)} />}
+      {rec.cards.length > 0 && (
+        <ChecksPanel checks={runChecks(rec)} collapsible onOpenCard={(cardId) => navigate(`card/${cardId}`)} />
+      )}
 
       <PeoplePanel
         rec={rec}

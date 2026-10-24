@@ -10,6 +10,7 @@ The original plan is in [`docs/implementation-plan.md`](docs/implementation-plan
 
 ## Features
 
+- **Name-only sign-in** (no password): your name becomes a person in every reconciliation you create or open. A one-click **"(me)"** option in "Who pays for this?" assigns an expense to you. Use **Switch user** in the top bar to change who you are.
 - **Reconciliations by period:** each billing period is its own reconciliation. The app warns about duplicate or overlapping periods.
 - **Cards:** card name, last four digits only, statement period, statement total, and a gradient tile per card.
 - **Transactions:** a single **Expense name** field. Refunds and credits are negative amounts. The original statement description is kept for reference.

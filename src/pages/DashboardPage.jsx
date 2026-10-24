@@ -24,12 +24,14 @@ import ImportBackupDialog from '../components/ImportBackupDialog';
 import ReconciliationFormDialog from '../components/ReconciliationFormDialog';
 import { backupIsStale, exportBackupFile, getLastBackupAt } from '../features/backups/backupActions';
 import { createReconciliation } from '../features/model';
+import { useCurrentUser, withMe } from '../features/user/currentUser';
 import { STATUS_LABELS } from '../services/calculations/reconciliation';
 import { storage } from '../services/storage';
 import { formatDate, formatPeriod } from '../utils/dates';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { user } = useCurrentUser();
   const [items, setItems] = useState(null);
   const [error, setError] = useState(null);
   const [createOpen, setCreateOpen] = useState(0); // non-zero = open; value is the dialog key
@@ -62,7 +64,7 @@ export default function DashboardPage() {
   useEffect(refresh, [refresh]);
 
   const handleCreate = async (fields) => {
-    const rec = createReconciliation(fields);
+    const rec = withMe(createReconciliation(fields), user);
     await storage.saveReconciliation(rec);
     navigate(`/r/${rec.id}`);
   };
@@ -82,10 +84,10 @@ export default function DashboardPage() {
           <Typography color="text.secondary">One reconciliation per billing period.</Typography>
         </Box>
         <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
-          <Button startIcon={<UploadOutlined />} onClick={() => setImportOpen(Date.now())}>
+          <Button variant="outlined" startIcon={<UploadOutlined />} onClick={() => setImportOpen(Date.now())}>
             Import backup
           </Button>
-          <Button startIcon={<DownloadOutlined />} onClick={exportAll} disabled={!items?.length}>
+          <Button variant="outlined" startIcon={<DownloadOutlined />} onClick={exportAll} disabled={!items?.length}>
             Export backup
           </Button>
           <Button variant="contained" startIcon={<Add />} onClick={() => setCreateOpen(Date.now())}>

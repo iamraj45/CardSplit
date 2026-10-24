@@ -97,11 +97,11 @@ export default function ReportPage() {
             sx={{ mr: 'auto' }}
           />
           {canShare && (
-            <Button startIcon={<ShareOutlined />} onClick={share}>
+            <Button variant="outlined" startIcon={<ShareOutlined />} onClick={share}>
               Share
             </Button>
           )}
-          <Button startIcon={<ContentCopyOutlined />} onClick={copy}>
+          <Button variant="outlined" startIcon={<ContentCopyOutlined />} onClick={copy}>
             Copy text
           </Button>
           <Button variant="contained" startIcon={<PrintOutlined />} onClick={() => window.print()}>

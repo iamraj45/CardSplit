@@ -1,6 +1,8 @@
 import { createBrowserRouter } from 'react-router-dom';
 import App from './App';
 import DashboardPage from '../pages/DashboardPage';
+import LoginPage from '../pages/LoginPage';
+import RequireUser from '../pages/RequireUser';
 import ReconciliationLayout from '../pages/ReconciliationLayout';
 import ReconciliationPage from '../pages/ReconciliationPage';
 import CardTransactionsPage from '../pages/CardTransactionsPage';
@@ -12,14 +14,20 @@ export const router = createBrowserRouter([
     path: '/',
     element: <App />,
     children: [
-      { index: true, element: <DashboardPage /> },
+      { path: 'login', element: <LoginPage /> },
       {
-        path: 'r/:id',
-        element: <ReconciliationLayout />,
+        element: <RequireUser />,
         children: [
-          { index: true, element: <ReconciliationPage /> },
-          { path: 'card/:cardId', element: <CardTransactionsPage /> },
-          { path: 'report', element: <ReportPage /> },
+          { index: true, element: <DashboardPage /> },
+          {
+            path: 'r/:id',
+            element: <ReconciliationLayout />,
+            children: [
+              { index: true, element: <ReconciliationPage /> },
+              { path: 'card/:cardId', element: <CardTransactionsPage /> },
+              { path: 'report', element: <ReportPage /> },
+            ],
+          },
         ],
       },
       { path: '*', element: <NotFoundPage /> },
