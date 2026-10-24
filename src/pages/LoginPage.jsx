@@ -14,6 +14,21 @@ import { localStorageAdapter } from '../services/storage';
 
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
+/** Plain-language versions of the sign-in errors people actually hit. */
+function friendlyAuthError(err) {
+  const message = err?.message ?? '';
+  if (err?.status === 429 || /rate limit|too many/i.test(message)) {
+    return 'Too many sign-in emails were sent recently. Use the most recent email you received, or try again in about an hour.';
+  }
+  if (/expired|invalid.*(otp|token)|token.*(expired|invalid)/i.test(message)) {
+    return 'That code or link has expired or was already used. Request a new sign-in email.';
+  }
+  if (/fetch|network/i.test(message)) {
+    return 'Could not reach the server. Check your internet connection and try again.';
+  }
+  return message || 'Something went wrong. Please try again.';
+}
+
 /**
  * Sign in with an email link (accounts + sync, when Supabase is configured), or continue without
  * an account (name only, data stays in this browser). After a first account sign-in, asks for a
@@ -47,7 +62,7 @@ export default function LoginPage() {
       await fn();
     } catch (err) {
       console.error(err);
-      setError(err?.message || 'Something went wrong. Please try again.');
+      setError(friendlyAuthError(err));
     } finally {
       setBusy(false);
     }
