@@ -64,7 +64,13 @@ function UserMenu() {
         startIcon={<AccountCircleOutlined />}
         onClick={(e) => setAnchor(e.currentTarget)}
         aria-label={`Signed in as ${user.name}`}
-        sx={{ ml: 'auto', minWidth: 0, '& .MuiButton-startIcon': { mr: { xs: 0.5, sm: 1 } } }}
+        sx={{
+          ml: 'auto',
+          minWidth: 0,
+          fontSize: { xs: '1rem', sm: '1.0625rem' },
+          '& .MuiButton-startIcon': { mr: { xs: 0.5, sm: 1 } },
+          '& .MuiButton-startIcon > *:nth-of-type(1)': { fontSize: 26 },
+        }}
       >
         <Box component="span" sx={{ maxWidth: { xs: 90, sm: 200 }, overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {user.name}
