@@ -51,7 +51,7 @@ export default function PeoplePanel({ rec, savedPeople, onAddPerson, onRenamePer
         </Typography>
       ) : (
         <TableContainer sx={{ mb: 2 }}>
-          <Table size="small">
+          <Table size="small" sx={{ '& .MuiTableCell-root': { px: { xs: 1, sm: 2 } } }}>
             <TableHead>
               <TableRow>
                 <TableCell>Person</TableCell>

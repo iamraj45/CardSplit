@@ -9,6 +9,7 @@ import InputAdornment from '@mui/material/InputAdornment';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Divider from '@mui/material/Divider';
+import { useIsPhone } from '../utils/useIsPhone';
 import SplitEditor from './SplitEditor';
 import { draftFromSplit, splitFromDraft } from '../features/splits/splitDraft';
 import { SPLIT_METHODS } from '../services/calculations/splitCalculations';
@@ -32,6 +33,7 @@ export default function ExpenseEditor({
   onSubmit,
   onClose,
 }) {
+  const isPhone = useIsPhone();
   const isEdit = Boolean(initial);
   const [date, setDate] = useState(initial?.date ?? defaultDate ?? '');
   const [expenseName, setExpenseName] = useState(initial?.expenseName ?? '');
@@ -76,7 +78,7 @@ export default function ExpenseEditor({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isPhone}>
       <form onSubmit={handleSubmit} noValidate>
         <DialogTitle>{isEdit ? 'Edit transaction' : 'Add transaction'}</DialogTitle>
         <DialogContent>

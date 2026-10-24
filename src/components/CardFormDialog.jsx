@@ -8,6 +8,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import InputAdornment from '@mui/material/InputAdornment';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import { useIsPhone } from '../utils/useIsPhone';
 import { LAST4_PATTERN } from '../features/model';
 import { paiseToInput, rupeesToPaise } from '../utils/currency';
 import { isValidISODate } from '../utils/dates';
@@ -17,6 +18,7 @@ import { isValidISODate } from '../utils/dates';
  * Render with a `key` so the form resets each time it opens.
  */
 export default function CardFormDialog({ open, initial, defaultPeriod, onSubmit, onClose }) {
+  const isPhone = useIsPhone();
   const isEdit = Boolean(initial);
   const [name, setName] = useState(initial?.name ?? '');
   const [last4, setLast4] = useState(initial?.last4 ?? '');
@@ -47,7 +49,7 @@ export default function CardFormDialog({ open, initial, defaultPeriod, onSubmit,
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isPhone}>
       <form onSubmit={handleSubmit} noValidate>
         <DialogTitle>{isEdit ? 'Edit card' : 'Add credit card'}</DialogTitle>
         <DialogContent>

@@ -15,6 +15,7 @@ import Select from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import UploadFileOutlined from '@mui/icons-material/UploadFileOutlined';
+import { useIsPhone } from '../utils/useIsPhone';
 import { IMPORT_ACTION, parseBackup, planImport, resolvePlan } from '../features/backups/backup';
 import { storage } from '../services/storage';
 import { formatDate, formatPeriod } from '../utils/dates';
@@ -23,6 +24,7 @@ const when = (iso) => (iso ? `${formatDate(iso.slice(0, 10))}, ${iso.slice(11, 1
 
 /** Restore reconciliations from a JSON backup, asking what to do with ones that already exist here. */
 export default function ImportBackupDialog({ open, existing, onDone, onClose }) {
+  const isPhone = useIsPhone();
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const [backup, setBackup] = useState(null);
@@ -70,7 +72,7 @@ export default function ImportBackupDialog({ open, existing, onDone, onClose }) 
   const conflicts = plan.filter((p) => p.existing).length;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth fullScreen={isPhone}>
       <DialogTitle>Import backup</DialogTitle>
       <DialogContent dividers>
         <Stack spacing={2}>

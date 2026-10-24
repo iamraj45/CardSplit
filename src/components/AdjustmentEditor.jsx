@@ -9,6 +9,7 @@ import Divider from '@mui/material/Divider';
 import InputAdornment from '@mui/material/InputAdornment';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import { useIsPhone } from '../utils/useIsPhone';
 import SplitEditor from './SplitEditor';
 import { draftFromSplit, splitFromDraft } from '../features/splits/splitDraft';
 import { paiseToInput, rupeesToPaise } from '../utils/currency';
@@ -19,6 +20,7 @@ import { paiseToInput, rupeesToPaise } from '../utils/currency';
  * Render with a `key` so the form resets each time it opens.
  */
 export default function AdjustmentEditor({ open, initial, people, savedPeople, onAddPerson, onSubmit, onClose }) {
+  const isPhone = useIsPhone();
   const isEdit = Boolean(initial);
   const [name, setName] = useState(initial?.name ?? '');
   const [amount, setAmount] = useState(initial ? paiseToInput(initial.amountPaise) : '');
@@ -46,7 +48,7 @@ export default function AdjustmentEditor({ open, initial, people, savedPeople, o
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isPhone}>
       <form onSubmit={handleSubmit} noValidate>
         <DialogTitle>{isEdit ? 'Edit adjustment' : 'Add external adjustment'}</DialogTitle>
         <DialogContent>

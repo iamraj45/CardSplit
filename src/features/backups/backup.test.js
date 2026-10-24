@@ -55,8 +55,8 @@ describe('backup round trip', () => {
 
   it('names files by date and reconciliation', () => {
     const now = new Date('2026-10-24T10:00:00Z');
-    expect(backupFileName(null, now)).toBe('ccr-backup-2026-10-24.json');
-    expect(backupFileName('March – April 2026', now)).toBe('ccr-march-april-2026-2026-10-24.json');
+    expect(backupFileName(null, now)).toBe('cardsplit-backup-2026-10-24.json');
+    expect(backupFileName('March – April 2026', now)).toBe('cardsplit-march-april-2026-2026-10-24.json');
   });
 });
 
@@ -64,7 +64,7 @@ describe('parseBackup validation', () => {
   it.each([
     ['', 'The file is empty.'],
     ['not json', 'This file is not a backup (it isn’t valid JSON).'],
-    ['{"hello":1}', 'This file is not a Card Reconciliation backup.'],
+    ['{"hello":1}', 'This file is not a CardSplit backup.'],
     [JSON.stringify({ format: BACKUP_FORMAT, backupVersion: 99, reconciliations: [] }), 'This backup was made by a newer version of the app. Update the app and try again.'],
     [JSON.stringify({ format: BACKUP_FORMAT, backupVersion: 1 }), 'The backup has no reconciliations list.'],
   ])('rejects %j', (input, error) => {

@@ -4,6 +4,7 @@ import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Button from '@mui/material/Button';
+import ButtonBase from '@mui/material/ButtonBase';
 import Chip from '@mui/material/Chip';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Grid from '@mui/material/Grid';
@@ -43,6 +44,7 @@ import {
 } from '../services/calculations/totals';
 import { formatINR } from '../utils/currency';
 import { formatDate } from '../utils/dates';
+import { useIsPhone } from '../utils/useIsPhone';
 
 const num = { whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' };
 
@@ -67,6 +69,7 @@ export default function CardTransactionsPage() {
   const [toDelete, setToDelete] = useState(null);
   const [unassignedOnly, setUnassignedOnly] = useState(false);
   const [importKey, setImportKey] = useState(0); // non-zero = import dialog open
+  const isPhone = useIsPhone(); // phones get a list instead of the table
 
   const transactions = useMemo(
     () => (card ? cardTransactions(rec, card.id).sort((a, b) => a.date.localeCompare(b.date)) : []),
@@ -164,12 +167,24 @@ export default function CardTransactionsPage() {
             />
           )}
         </Stack>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-          <SaveStatus status={saveStatus} />
-          <Button variant="outlined" startIcon={<UploadFileOutlined />} onClick={() => setImportKey(Date.now())}>
+        <Stack direction="row" sx={{ alignItems: 'center', gap: 1, width: { xs: '100%', sm: 'auto' } }}>
+          <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+            <SaveStatus status={saveStatus} />
+          </Box>
+          <Button
+            variant="outlined"
+            startIcon={<UploadFileOutlined />}
+            onClick={() => setImportKey(Date.now())}
+            sx={{ flex: { xs: 1, sm: 'none' } }}
+          >
             Import
           </Button>
-          <Button variant="contained" startIcon={<Add />} onClick={() => setEditor({ key: Date.now() })}>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => setEditor({ key: Date.now() })}
+            sx={{ flex: { xs: 1, sm: 'none' } }}
+          >
             Add transaction
           </Button>
         </Stack>
@@ -180,6 +195,43 @@ export default function CardTransactionsPage() {
           <Typography color="text.secondary">
             No transactions yet. Add each line from the statement — refunds and credits as negative amounts.
           </Typography>
+        </Paper>
+      ) : isPhone ? (
+        <Paper variant="outlined">
+          {visible.map((t) => (
+            <Stack key={t.id} direction="row" sx={{ alignItems: 'flex-start', borderBottom: 1, borderColor: 'divider' }}>
+              <ButtonBase
+                onClick={() => setEditor({ txn: t, key: Date.now() })}
+                aria-label={`Edit ${t.expenseName}`}
+                sx={{ flex: 1, minWidth: 0, display: 'block', textAlign: 'left', px: 2, py: 1.5 }}
+              >
+                <Stack direction="row" sx={{ justifyContent: 'space-between', gap: 1 }}>
+                  <Typography sx={{ fontWeight: 500, minWidth: 0 }} noWrap>
+                    {t.expenseName}
+                  </Typography>
+                  <Typography sx={{ ...num, fontWeight: 600, color: t.amountPaise < 0 ? 'success.main' : undefined }}>
+                    {formatINR(t.amountPaise)}
+                  </Typography>
+                </Stack>
+                <Typography variant="caption" color="text.secondary" component="div">
+                  {formatDate(t.date)}
+                  {t.amountPaise < 0 ? ' · Credit' : ''}
+                </Typography>
+                <Box sx={{ mt: 0.5 }}>
+                  <AllocationSummary item={t} people={rec.people} />
+                </Box>
+              </ButtonBase>
+              <IconButton onClick={() => setToDelete(t)} aria-label={`Delete ${t.expenseName}`} sx={{ mt: 1, mr: 0.5 }}>
+                <DeleteOutlined fontSize="small" />
+              </IconButton>
+            </Stack>
+          ))}
+          <Stack direction="row" sx={{ justifyContent: 'space-between', px: 2, py: 1.5 }}>
+            <Typography sx={{ fontWeight: 600 }}>
+              {visible === transactions ? `Total (${transactions.length})` : `Unassigned total (${visible.length})`}
+            </Typography>
+            <Typography sx={{ ...num, fontWeight: 600 }}>{formatINR(sumPaise(visible))}</Typography>
+          </Stack>
         </Paper>
       ) : (
         <TableContainer component={Paper} variant="outlined">

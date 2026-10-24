@@ -7,6 +7,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import { useIsPhone } from '../utils/useIsPhone';
 import { formatPeriod, isValidISODate, periodsOverlap } from '../utils/dates';
 
 /**
@@ -15,6 +16,7 @@ import { formatPeriod, isValidISODate, periodsOverlap } from '../utils/dates';
  * Render with a `key` so the form resets each time it opens.
  */
 export default function ReconciliationFormDialog({ open, initial, existing = [], onSubmit, onClose }) {
+  const isPhone = useIsPhone();
   const isEdit = Boolean(initial);
   const [periodStart, setPeriodStart] = useState(initial?.periodStart ?? '');
   const [periodEnd, setPeriodEnd] = useState(initial?.periodEnd ?? '');
@@ -53,7 +55,7 @@ export default function ReconciliationFormDialog({ open, initial, existing = [],
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isPhone}>
       <form onSubmit={handleSubmit} noValidate>
         <DialogTitle>{isEdit ? 'Edit reconciliation' : 'New reconciliation'}</DialogTitle>
         <DialogContent>

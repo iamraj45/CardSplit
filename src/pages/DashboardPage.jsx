@@ -83,14 +83,30 @@ export default function DashboardPage() {
           </Typography>
           <Typography color="text.secondary">One reconciliation per billing period.</Typography>
         </Box>
-        <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
-          <Button variant="outlined" startIcon={<UploadOutlined />} onClick={() => setImportOpen(Date.now())}>
+        <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' } }}>
+          <Button
+            variant="outlined"
+            startIcon={<UploadOutlined />}
+            onClick={() => setImportOpen(Date.now())}
+            sx={{ flex: { xs: 1, sm: 'none' } }}
+          >
             Import backup
           </Button>
-          <Button variant="outlined" startIcon={<DownloadOutlined />} onClick={exportAll} disabled={!items?.length}>
+          <Button
+            variant="outlined"
+            startIcon={<DownloadOutlined />}
+            onClick={exportAll}
+            disabled={!items?.length}
+            sx={{ flex: { xs: 1, sm: 'none' } }}
+          >
             Export backup
           </Button>
-          <Button variant="contained" startIcon={<Add />} onClick={() => setCreateOpen(Date.now())}>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => setCreateOpen(Date.now())}
+            sx={{ flexBasis: { xs: '100%', sm: 'auto' }, order: { xs: -1, sm: 0 } }}
+          >
             New reconciliation
           </Button>
         </Stack>

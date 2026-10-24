@@ -88,27 +88,31 @@ export default function ReconciliationPage() {
       </Breadcrumbs>
 
       <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
-        <Box>
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
-              {rec.name}
-            </Typography>
-            <Chip size="small" label={status.label} color={status.color} />
-          </Stack>
-        </Box>
-        <Stack direction="row" sx={{ alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+        <Stack direction="row" sx={{ alignItems: 'center', columnGap: 1, rowGap: 0.5, flexWrap: 'wrap' }}>
+          <Typography variant="h4" component="h1" sx={{ fontWeight: 700, fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
+            {rec.name}
+          </Typography>
+          <Chip size="small" label={status.label} color={status.color} />
           <SaveStatus status={saveStatus} />
-          <Button variant="outlined" startIcon={<EditOutlined />} onClick={() => open('details')}>
+        </Stack>
+        <Stack direction="row" sx={{ alignItems: 'center', gap: 1, width: { xs: '100%', sm: 'auto' } }}>
+          <Button variant="outlined" startIcon={<EditOutlined />} onClick={() => open('details')} sx={{ flex: { xs: 1, sm: 'none' } }}>
             Edit
           </Button>
           <Button
             variant="outlined"
             startIcon={<DownloadOutlined />}
             onClick={() => saveNow().then(() => exportBackupFile(rec))}
+            sx={{ flex: { xs: 1, sm: 'none' } }}
           >
             Backup
           </Button>
-          <Button variant="contained" startIcon={<AssessmentOutlined />} onClick={() => navigate('report')}>
+          <Button
+            variant="contained"
+            startIcon={<AssessmentOutlined />}
+            onClick={() => navigate('report')}
+            sx={{ flex: { xs: 1, sm: 'none' } }}
+          >
             Report
           </Button>
         </Stack>
@@ -116,32 +120,17 @@ export default function ReconciliationPage() {
 
       {rec.cards.length > 0 && (
         <Paper variant="outlined" sx={{ p: 2 }}>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 1, sm: 4 }}>
-            <Box>
-              <Typography variant="caption" color="text.secondary">
-                Statement totals ({rec.cards.length} card{rec.cards.length === 1 ? '' : 's'})
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                {formatINR(statementGrandTotal(rec))}
-              </Typography>
-            </Box>
-            <Box>
-              <Typography variant="caption" color="text.secondary">
-                Entered transactions ({rec.transactions.length})
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                {formatINR(sumPaise(rec.transactions))}
-              </Typography>
-            </Box>
+          <Stack direction="row" sx={{ columnGap: { xs: 1.5, sm: 4 } }}>
+            <SummaryFigure
+              label={`Statements (${rec.cards.length})`}
+              value={formatINR(statementGrandTotal(rec))}
+            />
+            <SummaryFigure label={`Entered (${rec.transactions.length})`} value={formatINR(sumPaise(rec.transactions))} />
             {rec.adjustments.length > 0 && (
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  External adjustments ({rec.adjustments.length})
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  {formatINR(sumPaise(rec.adjustments))}
-                </Typography>
-              </Box>
+              <SummaryFigure
+                label={`Adjustments (${rec.adjustments.length})`}
+                value={formatINR(sumPaise(rec.adjustments))}
+              />
             )}
           </Stack>
           {(unassignedTxns.length > 0 || unassignedAdjustments.length > 0) && (
@@ -298,5 +287,18 @@ export default function ReconciliationPage() {
         onClose={() => setCardToDelete(null)}
       />
     </Stack>
+  );
+}
+
+function SummaryFigure({ label, value }) {
+  return (
+    <Box sx={{ minWidth: 0, flex: { xs: 1, sm: 'none' } }}>
+      <Typography variant="caption" color="text.secondary" noWrap component="div">
+        {label}
+      </Typography>
+      <Typography variant="h6" sx={{ fontWeight: 600, fontSize: { xs: '0.95rem', sm: '1.25rem' }, whiteSpace: 'nowrap' }}>
+        {value}
+      </Typography>
+    </Box>
   );
 }

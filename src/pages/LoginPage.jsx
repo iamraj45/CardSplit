@@ -45,10 +45,15 @@ export default function LoginPage() {
         <Stack spacing={3} component="form" noValidate onSubmit={(e) => { e.preventDefault(); go(name); }}>
           <Stack spacing={1} sx={{ alignItems: 'center', textAlign: 'center' }}>
             <CreditCard color="primary" sx={{ fontSize: 44 }} />
-            <Typography variant="h5" component="h1" sx={{ fontWeight: 700 }}>
-              Welcome
+            <Typography variant="h4" component="h1" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
+              CardSplit
             </Typography>
-            <Typography color="text.secondary">What should we call you?</Typography>
+            <Typography color="primary" sx={{ fontWeight: 600 }}>
+              Every card. Every expense. Accounted for.
+            </Typography>
+            <Typography color="text.secondary" sx={{ pt: 1 }}>
+              What should we call you?
+            </Typography>
           </Stack>
 
           <TextField

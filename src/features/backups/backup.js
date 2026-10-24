@@ -33,10 +33,10 @@ const slug = (s) =>
     .replace(/^-|-$/g, '')
     .slice(0, 40);
 
-/** "ccr-backup-2026-10-24.json" or "ccr-march-april-2026-2026-10-24.json" for a single reconciliation. */
+/** "cardsplit-backup-2026-10-24.json" or "cardsplit-march-april-2026-2026-10-24.json" for a single reconciliation. */
 export function backupFileName(singleName, now = new Date()) {
   const date = now.toISOString().slice(0, 10);
-  return singleName ? `ccr-${slug(singleName) || 'reconciliation'}-${date}.json` : `ccr-backup-${date}.json`;
+  return singleName ? `cardsplit-${slug(singleName) || 'reconciliation'}-${date}.json` : `cardsplit-backup-${date}.json`;
 }
 
 class BackupError extends Error {}
@@ -158,7 +158,7 @@ export function parseBackup(text) {
     return { ok: false, error: 'This file is not a backup (it isn’t valid JSON).' };
   }
   if (!data || data.format !== BACKUP_FORMAT) {
-    return { ok: false, error: 'This file is not a Card Reconciliation backup.' };
+    return { ok: false, error: 'This file is not a CardSplit backup.' };
   }
   if (!isInt(data.backupVersion) || data.backupVersion > BACKUP_VERSION) {
     return { ok: false, error: 'This backup was made by a newer version of the app. Update the app and try again.' };

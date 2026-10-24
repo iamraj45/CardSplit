@@ -115,7 +115,18 @@ export default function SplitEditor({ draft, onChange, amountPaise, people, save
         size="small"
         value={isMe ? ME : (draft.method ?? 'none')}
         onChange={(_, value) => value && selectOption(value)}
-        sx={{ flexWrap: 'wrap' }}
+        sx={(theme) => ({
+          flexWrap: 'wrap',
+          // On phones the options wrap onto several rows, so show them as separate pills.
+          [theme.breakpoints.down('sm')]: {
+            gap: 1,
+            '& .MuiToggleButtonGroup-grouped': {
+              border: `1px solid ${theme.palette.divider} !important`,
+              borderRadius: '8px !important',
+              marginLeft: '0 !important',
+            },
+          },
+        })}
       >
         {options.map((o) => (
           <ToggleButton key={o.value} value={o.value} sx={{ textTransform: 'none', px: 1.5 }}>

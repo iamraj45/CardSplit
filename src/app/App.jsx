@@ -82,7 +82,7 @@ export default function App() {
             noWrap
             sx={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}
           >
-            Card Reconciliation
+            CardSplit
           </Typography>
           <UserMenu />
         </Toolbar>

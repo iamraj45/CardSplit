@@ -7,11 +7,11 @@ import { formatINR } from '../utils/currency';
 
 function Figure({ label, value, color }) {
   return (
-    <Box sx={{ minWidth: 140 }}>
-      <Typography variant="caption" color="text.secondary">
+    <Box sx={{ minWidth: { xs: 0, sm: 140 }, flex: { xs: 1, sm: 'none' } }}>
+      <Typography variant="caption" color="text.secondary" noWrap component="div">
         {label}
       </Typography>
-      <Typography variant="h6" sx={{ fontWeight: 600, color }}>
+      <Typography variant="h6" sx={{ fontWeight: 600, color, fontSize: { xs: '0.95rem', sm: '1.25rem' }, whiteSpace: 'nowrap' }}>
         {value}
       </Typography>
     </Box>
@@ -25,7 +25,7 @@ export default function ReconciliationStatus({ statementTotalPaise, enteredTotal
 
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 1, sm: 4 }} sx={{ mb: 2 }}>
+      <Stack direction="row" sx={{ mb: 2, columnGap: { xs: 1.5, sm: 4 } }}>
         <Figure label="Statement total" value={formatINR(statementTotalPaise)} />
         <Figure label={`Entered (${transactionCount})`} value={formatINR(enteredTotalPaise)} />
         <Figure
