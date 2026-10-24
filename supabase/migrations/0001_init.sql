@@ -62,6 +62,21 @@ create table public.saved_people (
 );
 
 -- ---------------------------------------------------------------------------------------------
+-- Table privileges for the Data API
+-- Explicit, so this works with "Automatically expose new tables" turned OFF (recommended).
+-- Signed-out (anon) callers get nothing; signed-in users get only what the app uses directly.
+-- Row Level Security below still limits which rows they can see or change.
+-- ---------------------------------------------------------------------------------------------
+
+revoke all on public.profiles, public.reconciliations, public.reconciliation_members, public.invites, public.saved_people
+  from anon, authenticated;
+
+grant select, insert, update on public.profiles to authenticated;
+grant select, insert, update, delete on public.saved_people to authenticated;
+-- Read-only: all writes go through the functions below. Select is also needed for Realtime.
+grant select on public.reconciliations, public.reconciliation_members, public.invites to authenticated;
+
+-- ---------------------------------------------------------------------------------------------
 -- Row Level Security
 -- ---------------------------------------------------------------------------------------------
 
