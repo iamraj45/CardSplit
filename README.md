@@ -87,7 +87,7 @@ Requires Node 20.19+ or 22.12+ (Netlify builds with Node 24).
 ## Accounts, sync and sharing (Supabase)
 
 Accounts are optional. Without Supabase settings the app runs local-only, exactly as described above. With them:
-- **Sign-in:** people sign in with an email link (or a 6-digit code from the same email). "Continue without an account" is still available.
+- **Sign-in:** people sign in with an email link (or the one-time code from the same email). "Continue without an account" is still available.
 - **Offline-first sync:** reconciliations sync across devices. The app reads and writes a local copy in the browser, so it works offline, and a background sync pushes and pulls changes.
 - **Merging:** when two devices or two people change the same reconciliation, changes are merged per transaction, card, person and adjustment. If the same item was edited on both sides, the later edit wins and a notice says so. The merge logic is in `src/services/sync/merge.js`.
 - **Sharing:** owners invite people by email as editors or viewers. Invited people get access when they sign in with that email.
@@ -99,7 +99,7 @@ Accounts are optional. Without Supabase settings the app runs local-only, exactl
 3. Go to **Authentication → URL configuration**:
    - set **Site URL** to the Netlify URL;
    - add `http://localhost:5173` to the redirect URLs.
-4. Optional: in **Authentication → Email templates**, add `{{ .Token }}` to the magic-link email so people can type the 6-digit code instead of opening the link.
+4. Optional: in **Authentication → Email templates**, add `{{ .Token }}` to the magic-link email so people can type the one-time code instead of opening the link.
 5. Copy `.env.example` to `.env.local` and fill in `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (Project Settings → API). In Netlify, add the same two variables under **Site settings → Environment variables**, then redeploy.
 
 The anon key is meant to be public, because every table is protected by Row Level Security. Never put the service-role key in the app.

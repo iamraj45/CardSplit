@@ -13,6 +13,8 @@ import { loadCurrentUser, useCurrentUser } from '../features/user/currentUser';
 import { localStorageAdapter } from '../services/storage';
 
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+// Supabase lets each project choose a code length of 6–10 digits (Authentication → Email OTP length).
+const CODE = /^\d{6,10}$/;
 
 /** Plain-language versions of the sign-in errors people actually hit. */
 function friendlyAuthError(err) {
@@ -88,8 +90,8 @@ export default function LoginPage() {
   };
 
   const submitCode = () => {
-    if (!/^\d{6}$/.test(code.trim())) {
-      setError('Enter the 6-digit code from the email.');
+    if (!CODE.test(code.trim())) {
+      setError('Enter the code from the email.');
       return;
     }
     run(() => verifyCode(email, code));
@@ -175,14 +177,14 @@ export default function LoginPage() {
                 Check <strong>{email.trim()}</strong> for a sign-in link. Open it on this device to continue.
               </Alert>
               <TextField
-                label="Or enter the 6-digit code"
+                label="Or enter the code from the email"
                 value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 10))}
                 slotProps={{ htmlInput: { inputMode: 'numeric', autoComplete: 'one-time-code' } }}
                 helperText="Useful if the link opens in a different browser."
                 fullWidth
               />
-              <Button type="submit" variant="contained" size="large" disabled={busy || code.length !== 6} fullWidth>
+              <Button type="submit" variant="contained" size="large" disabled={busy || !CODE.test(code)} fullWidth>
                 Sign in with code
               </Button>
               <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
