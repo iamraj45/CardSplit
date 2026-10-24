@@ -143,8 +143,8 @@ export default function App() {
             aria-label="CardSplit home"
             sx={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none', minWidth: 0 }}
           >
-            <Box component="img" src="/logo.png" alt="" sx={{ height: 34, width: 'auto' }} />
-            <Box component="img" src="/cardsplit-wordmark.png" alt="CardSplit" sx={{ height: { xs: 26, sm: 30 }, width: 'auto' }} />
+            <Box component="img" src="/logo.png" alt="" sx={{ height: 28, width: 'auto' }} />
+            <Box component="img" src="/cardsplit-wordmark.png" alt="CardSplit" sx={{ height: { xs: 20, sm: 24 }, width: 'auto' }} />
           </Box>
           <UserMenu />
         </Toolbar>

@@ -116,9 +116,9 @@ export default function LoginPage() {
       <Paper variant="outlined" sx={{ p: { xs: 3, sm: 5 }, width: '100%', maxWidth: 440 }}>
         <Stack spacing={3} component="form" noValidate onSubmit={onSubmit}>
           <Stack spacing={1} sx={{ alignItems: 'center', textAlign: 'center' }}>
-            <Box component="img" src="/logo.png" alt="" sx={{ width: 112, height: 'auto' }} />
+            <Box component="img" src="/logo.png" alt="" sx={{ width: 88, height: 'auto' }} />
             <Box component="h1" sx={{ m: 0, lineHeight: 0 }}>
-              <Box component="img" src="/cardsplit-wordmark.png" alt="CardSplit" sx={{ width: { xs: 220, sm: 260 }, height: 'auto' }} />
+              <Box component="img" src="/cardsplit-wordmark.png" alt="CardSplit" sx={{ width: { xs: 180, sm: 210 }, height: 'auto' }} />
             </Box>
             <Typography color="primary" sx={{ fontWeight: 600 }}>
               Every card. Every expense. Accounted for.
