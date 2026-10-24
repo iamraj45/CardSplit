@@ -46,6 +46,7 @@ import {
 } from '../services/calculations/totals';
 import { storage } from '../services/storage';
 import { nextGradientKey } from '../theme/cardGradients';
+import { loadSavedCards, notYetAdded } from '../features/cards/savedCards';
 import { formatINR } from '../utils/currency';
 
 export default function ReconciliationPage() {
@@ -77,6 +78,7 @@ export default function ReconciliationPage() {
   const [cardToDelete, setCardToDelete] = useState(null);
   const [adjustmentToDelete, setAdjustmentToDelete] = useState(null);
   const [others, setOthers] = useState([]);
+  const [savedCards, setSavedCards] = useState([]);
 
   useEffect(() => {
     storage.listReconciliations().then(setOthers).catch(() => setOthers([]));
@@ -85,6 +87,14 @@ export default function ReconciliationPage() {
   const status = STATUS_LABELS[rec.status] ?? STATUS_LABELS.draft;
   const open = (kind, target) => setDialog({ kind, target, key: Date.now() });
   const close = () => setDialog(null);
+  const openNewCard = () => {
+    loadSavedCards()
+      .catch(() => [])
+      .then((cards) => {
+        setSavedCards(cards);
+        open('card');
+      });
+  };
   const unassignedTxns = unassignedItems(rec, rec.transactions);
   const unassignedAdjustments = unassignedItems(rec, rec.adjustments);
 
@@ -201,7 +211,7 @@ export default function ReconciliationPage() {
           <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <Card variant="outlined" sx={{ height: '100%', minHeight: 190, borderStyle: 'dashed', borderRadius: 3 }}>
               <CardActionArea
-                onClick={() => open('card')}
+                onClick={openNewCard}
                 sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 1, color: 'text.secondary' }}
               >
                 <Add fontSize="large" />
@@ -306,10 +316,12 @@ export default function ReconciliationPage() {
           open
           initial={dialog.target}
           defaultPeriod={{ start: rec.periodStart, end: rec.periodEnd }}
+          savedCards={dialog.target ? [] : notYetAdded(savedCards, rec.cards)}
+          existingCards={rec.cards}
           onSubmit={(fields) =>
             dialog.target
               ? updateCard(dialog.target.id, fields)
-              : addCard({ ...fields, gradientKey: nextGradientKey(rec.cards) })
+              : addCard({ gradientKey: nextGradientKey(rec.cards), ...fields })
           }
           onClose={close}
         />

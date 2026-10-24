@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -8,16 +9,20 @@ import DialogTitle from '@mui/material/DialogTitle';
 import InputAdornment from '@mui/material/InputAdornment';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import CreditCardOutlined from '@mui/icons-material/CreditCardOutlined';
 import { useIsPhone } from '../utils/useIsPhone';
+import { cardFieldsFromSaved } from '../features/cards/savedCards';
 import { LAST4_PATTERN } from '../features/model';
 import { paiseToInput, rupeesToPaise } from '../utils/currency';
 import { isValidISODate } from '../utils/dates';
 
 /**
  * Add or edit a credit card. Only the card name and last four digits are collected.
+ * When adding, `savedCards` from earlier reconciliations can fill in the form with one tap.
  * Render with a `key` so the form resets each time it opens.
  */
-export default function CardFormDialog({ open, initial, defaultPeriod, onSubmit, onClose }) {
+export default function CardFormDialog({ open, initial, defaultPeriod, savedCards = [], existingCards = [], onSubmit, onClose }) {
   const isPhone = useIsPhone();
   const isEdit = Boolean(initial);
   const [name, setName] = useState(initial?.name ?? '');
@@ -25,7 +30,17 @@ export default function CardFormDialog({ open, initial, defaultPeriod, onSubmit,
   const [statementStart, setStatementStart] = useState(initial?.statementStart ?? defaultPeriod?.start ?? '');
   const [statementEnd, setStatementEnd] = useState(initial?.statementEnd ?? defaultPeriod?.end ?? '');
   const [total, setTotal] = useState(initial ? paiseToInput(initial.statementTotalPaise) : '');
+  const [gradientKey, setGradientKey] = useState(null); // kept from a picked saved card
   const [submitted, setSubmitted] = useState(false);
+
+  const pickSaved = (saved) => {
+    const fields = cardFieldsFromSaved(saved, { periodStart: defaultPeriod?.start, periodEnd: defaultPeriod?.end }, existingCards);
+    setName(fields.name);
+    setLast4(fields.last4);
+    setStatementStart(fields.statementStart);
+    setStatementEnd(fields.statementEnd);
+    setGradientKey(fields.gradientKey);
+  };
 
   const totalPaise = rupeesToPaise(total);
   const errors = {
@@ -44,7 +59,14 @@ export default function CardFormDialog({ open, initial, defaultPeriod, onSubmit,
     e.preventDefault();
     setSubmitted(true);
     if (!valid) return;
-    onSubmit({ name: name.trim(), last4, statementStart, statementEnd, statementTotalPaise: totalPaise });
+    onSubmit({
+      name: name.trim(),
+      last4,
+      statementStart,
+      statementEnd,
+      statementTotalPaise: totalPaise,
+      ...(gradientKey && { gradientKey }),
+    });
     onClose();
   };
 
@@ -54,6 +76,25 @@ export default function CardFormDialog({ open, initial, defaultPeriod, onSubmit,
         <DialogTitle>{isEdit ? 'Edit card' : 'Add credit card'}</DialogTitle>
         <DialogContent>
           <Stack spacing={1} sx={{ pt: 1 }}>
+            {!isEdit && savedCards.length > 0 && (
+              <Stack spacing={1} sx={{ pb: 1 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Your saved cards
+                </Typography>
+                <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
+                  {savedCards.map((c) => (
+                    <Chip
+                      key={c.key}
+                      icon={<CreditCardOutlined />}
+                      label={`${c.name} •••• ${c.last4}`}
+                      onClick={() => pickSaved(c)}
+                      color={name === c.name && last4 === c.last4 ? 'primary' : 'default'}
+                      variant={name === c.name && last4 === c.last4 ? 'filled' : 'outlined'}
+                    />
+                  ))}
+                </Stack>
+              </Stack>
+            )}
             <TextField
               label="Card name"
               value={name}

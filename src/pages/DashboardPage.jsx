@@ -23,6 +23,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import ImportBackupDialog from '../components/ImportBackupDialog';
 import ReconciliationFormDialog from '../components/ReconciliationFormDialog';
 import { backupIsStale, exportBackupFile, getLastBackupAt } from '../features/backups/backupActions';
+import { carryOverCards, loadSavedCards } from '../features/cards/savedCards';
 import { createReconciliation } from '../features/model';
 import { useCurrentUser, withMe } from '../features/user/currentUser';
 import { useSync } from '../features/sync/syncContext';
@@ -40,6 +41,7 @@ export default function DashboardPage() {
   const [items, setItems] = useState(null);
   const [error, setError] = useState(null);
   const [createOpen, setCreateOpen] = useState(0); // non-zero = open; value is the dialog key
+  const [savedCards, setSavedCards] = useState([]);
   const [toDelete, setToDelete] = useState(null);
   const [importOpen, setImportOpen] = useState(0); // non-zero = open; value is the dialog key
   const [toast, setToast] = useState(null);
@@ -69,8 +71,22 @@ export default function DashboardPage() {
   useEffect(refresh, [refresh]);
   useEffect(() => onRecordsChanged(refresh), [refresh]); // sync brought in changes
 
-  const handleCreate = async (fields) => {
+  // Saved cards are read when the dialog opens, so they include cards added since the last visit.
+  const openCreate = () => {
+    loadSavedCards()
+      .catch((err) => {
+        console.error('Could not read saved cards', err);
+        return [];
+      })
+      .then((cards) => {
+        setSavedCards(cards);
+        setCreateOpen(Date.now());
+      });
+  };
+
+  const handleCreate = async ({ cards = [], ...fields }) => {
     const rec = withMe(createReconciliation(fields), user);
+    rec.cards = carryOverCards(cards, fields);
     await storage.saveReconciliation(rec);
     navigate(`/r/${rec.id}`);
   };
@@ -110,7 +126,7 @@ export default function DashboardPage() {
           <Button
             variant="contained"
             startIcon={<Add />}
-            onClick={() => setCreateOpen(Date.now())}
+            onClick={openCreate}
             sx={{ flexBasis: { xs: '100%', sm: 'auto' }, order: { xs: -1, sm: 0 } }}
           >
             New reconciliation
@@ -149,7 +165,7 @@ export default function DashboardPage() {
           <Typography color="text.secondary" sx={{ mb: 2 }}>
             Create one for a billing period, then add your credit cards and transactions.
           </Typography>
-          <Button variant="contained" startIcon={<Add />} onClick={() => setCreateOpen(Date.now())}>
+          <Button variant="contained" startIcon={<Add />} onClick={openCreate}>
             New reconciliation
           </Button>
         </Paper>
@@ -252,6 +268,7 @@ export default function DashboardPage() {
           key={createOpen}
           open
           existing={items ?? []}
+          savedCards={savedCards}
           onSubmit={handleCreate}
           onClose={() => setCreateOpen(0)}
         />
