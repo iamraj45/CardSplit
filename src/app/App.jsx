@@ -149,7 +149,7 @@ export default function App() {
           <UserMenu />
         </Toolbar>
       </AppBar>
-      <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 4 }, '@media print': { p: 0, maxWidth: 'none' } }}>
+      <Container maxWidth="lg" sx={{ pt: 0, pb: { xs: 2, sm: 4 }, '@media print': { p: 0, maxWidth: 'none' } }}>
         <Outlet />
       </Container>
     </Box>
