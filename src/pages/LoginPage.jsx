@@ -7,7 +7,6 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import CreditCard from '@mui/icons-material/CreditCard';
 import { useCurrentUser } from '../features/user/currentUser';
 import { storage } from '../services/storage';
 
@@ -44,10 +43,10 @@ export default function LoginPage() {
       <Paper variant="outlined" sx={{ p: { xs: 3, sm: 5 }, width: '100%', maxWidth: 440 }}>
         <Stack spacing={3} component="form" noValidate onSubmit={(e) => { e.preventDefault(); go(name); }}>
           <Stack spacing={1} sx={{ alignItems: 'center', textAlign: 'center' }}>
-            <CreditCard color="primary" sx={{ fontSize: 44 }} />
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
-              CardSplit
-            </Typography>
+            <Box component="img" src="/logo.png" alt="" sx={{ width: 112, height: 'auto' }} />
+            <Box component="h1" sx={{ m: 0, lineHeight: 0 }}>
+              <Box component="img" src="/cardsplit-wordmark.png" alt="CardSplit" sx={{ width: { xs: 220, sm: 260 }, height: 'auto' }} />
+            </Box>
             <Typography color="primary" sx={{ fontWeight: 600 }}>
               Every card. Every expense. Accounted for.
             </Typography>

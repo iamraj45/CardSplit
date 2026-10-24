@@ -12,8 +12,6 @@ import { useCurrentUser } from '../features/user/currentUser';
 import Container from '@mui/material/Container';
 import GlobalStyles from '@mui/material/GlobalStyles';
 import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
-import CreditCard from '@mui/icons-material/CreditCard';
 
 // Paper output: black on white regardless of the on-screen colour scheme, no app chrome.
 const printStyles = (
@@ -74,16 +72,15 @@ export default function App() {
       {printStyles}
       <AppBar position="sticky" color="primary" elevation={0} sx={{ displayPrint: 'none' }}>
         <Toolbar>
-          <CreditCard sx={{ mr: 1.5 }} />
-          <Typography
-            variant="h6"
+          <Box
             component={RouterLink}
             to="/"
-            noWrap
-            sx={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}
+            aria-label="CardSplit home"
+            sx={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none', minWidth: 0 }}
           >
-            CardSplit
-          </Typography>
+            <Box component="img" src="/logo.png" alt="" sx={{ height: 34, width: 'auto' }} />
+            <Box component="img" src="/cardsplit-wordmark.png" alt="CardSplit" sx={{ height: { xs: 26, sm: 30 }, width: 'auto' }} />
+          </Box>
           <UserMenu />
         </Toolbar>
       </AppBar>
