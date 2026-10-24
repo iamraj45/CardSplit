@@ -10,6 +10,7 @@ import {
 } from './backup';
 import { SCHEMA_VERSION } from '../model';
 
+const T = '2026-10-01T12:00:00.000Z';
 const rec = (overrides = {}) => ({
   id: 'r1',
   schemaVersion: SCHEMA_VERSION,
@@ -17,9 +18,9 @@ const rec = (overrides = {}) => ({
   periodStart: '2026-03-15',
   periodEnd: '2026-04-14',
   status: 'draft',
-  people: [{ id: 'ak', name: 'Akansha' }],
+  people: [{ id: 'ak', name: 'Akansha', updatedAt: T }],
   cards: [
-    { id: 'c1', name: 'HDFC', last4: '4821', statementStart: '2026-03-15', statementEnd: '2026-04-14', statementTotalPaise: 10000, gradientKey: 'ocean' },
+    { id: 'c1', name: 'HDFC', last4: '4821', statementStart: '2026-03-15', statementEnd: '2026-04-14', statementTotalPaise: 10000, gradientKey: 'ocean', updatedAt: T },
   ],
   transactions: [
     {
@@ -31,9 +32,11 @@ const rec = (overrides = {}) => ({
       amountPaise: 10000,
       split: { method: 'single', allocations: [{ personId: 'ak', value: null }] },
       source: 'import:pdf',
+      updatedAt: T,
     },
   ],
-  adjustments: [{ id: 'a1', name: 'Slice', amountPaise: 54100, split: null, note: 'EMI' }],
+  adjustments: [{ id: 'a1', name: 'Slice', amountPaise: 54100, split: null, note: 'EMI', updatedAt: T }],
+  detailsUpdatedAt: T,
   reportSettings: { itemised: false },
   createdAt: '2026-10-01T00:00:00.000Z',
   updatedAt: '2026-10-02T00:00:00.000Z',
@@ -98,7 +101,7 @@ describe('parseBackup validation', () => {
     const restored = parseBackup(text([extra])).backup.reconciliations[0];
     expect(restored.secret).toBeUndefined();
     expect(Object.keys(restored.cards[0]).sort()).toEqual(
-      ['gradientKey', 'id', 'last4', 'name', 'statementEnd', 'statementStart', 'statementTotalPaise'].sort(),
+      ['gradientKey', 'id', 'last4', 'name', 'statementEnd', 'statementStart', 'statementTotalPaise', 'updatedAt'].sort(),
     );
     expect(restored.transactions[0].hack).toBeUndefined();
   });

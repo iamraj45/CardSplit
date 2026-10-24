@@ -47,7 +47,7 @@ const STATUS_COLOR = {
 
 export default function ReportPage() {
   const navigate = useNavigate();
-  const { rec, updateDetails } = useOutletContext();
+  const { rec, updateDetails, canEdit } = useOutletContext();
   const report = useMemo(() => buildReport(rec), [rec]);
   const itemised = rec.reportSettings?.itemised ?? true;
   const text = useMemo(() => buildReportText(report, { itemised }), [report, itemised]);
@@ -89,6 +89,7 @@ export default function ReportPage() {
           <FormControlLabel
             control={
               <Switch
+                disabled={!canEdit}
                 checked={itemised}
                 onChange={(e) => updateDetails({ reportSettings: { ...rec.reportSettings, itemised: e.target.checked } })}
               />

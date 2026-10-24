@@ -4,6 +4,7 @@ import { RouterProvider } from 'react-router-dom';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import { router } from './app/routes';
+import SyncProvider from './features/sync/SyncProvider';
 import UserProvider from './features/user/UserProvider';
 import { theme } from './theme';
 
@@ -12,7 +13,9 @@ createRoot(document.getElementById('root')).render(
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <UserProvider>
-        <RouterProvider router={router} />
+        <SyncProvider>
+          <RouterProvider router={router} />
+        </SyncProvider>
       </UserProvider>
     </ThemeProvider>
   </StrictMode>,

@@ -29,7 +29,7 @@ const num = { whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' };
 const breakdown = { ...num, display: { xs: 'none', sm: 'table-cell' } };
 
 /** People in this reconciliation with their consolidated totals across cards and adjustments. */
-export default function PeoplePanel({ rec, savedPeople, onAddPerson, onRenamePerson, onRemovePerson }) {
+export default function PeoplePanel({ rec, savedPeople, onAddPerson, onRenamePerson, onRemovePerson, readOnly = false }) {
   const [renaming, setRenaming] = useState(null);
   const { rows, unassignedCardsPaise, unassignedAdjustmentsPaise } = consolidatedPersonTotals(rec);
   const cardsTotal = sumPaise(rec.transactions);
@@ -80,7 +80,7 @@ export default function PeoplePanel({ rec, savedPeople, onAddPerson, onRenamePer
                     <TableCell align="right" sx={{ ...num, fontWeight: 600 }}>
                       {formatINR(totalPaise)}
                     </TableCell>
-                    <TableCell align="right" sx={{ whiteSpace: 'nowrap', width: 1 }}>
+                    <TableCell align="right" sx={{ whiteSpace: 'nowrap', width: 1, display: readOnly ? 'none' : undefined }}>
                       <Tooltip title="Rename">
                         <IconButton size="small" onClick={() => setRenaming(person)} aria-label={`Rename ${person.name}`}>
                           <EditOutlined fontSize="small" />
@@ -137,7 +137,7 @@ export default function PeoplePanel({ rec, savedPeople, onAddPerson, onRenamePer
         </TableContainer>
       )}
 
-      <PersonPicker savedPeople={savedPeople} currentPeople={rec.people} onAdd={onAddPerson} />
+      {!readOnly && <PersonPicker savedPeople={savedPeople} currentPeople={rec.people} onAdd={onAddPerson} />}
 
       {renaming && (
         <RenameDialog

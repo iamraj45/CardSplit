@@ -24,7 +24,7 @@ import { useIsPhone } from '../utils/useIsPhone';
 const num = { whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' };
 
 /** External adjustments: amounts outside card statements that only affect person totals. */
-export default function AdjustmentsSection({ rec, onAdd, onEdit, onDelete }) {
+export default function AdjustmentsSection({ rec, onAdd, onEdit, onDelete, readOnly = false }) {
   const { adjustments, people } = rec;
   const isPhone = useIsPhone();
 
@@ -42,9 +42,11 @@ export default function AdjustmentsSection({ rec, onAdd, onEdit, onDelete }) {
             Not part of any card statement — included in person totals only.
           </Typography>
         </div>
-        <Button variant="outlined" startIcon={<Add />} onClick={onAdd}>
-          Add adjustment
-        </Button>
+        {!readOnly && (
+          <Button variant="outlined" startIcon={<Add />} onClick={onAdd}>
+            Add adjustment
+          </Button>
+        )}
       </Stack>
 
       {adjustments.length === 0 ? (
@@ -55,6 +57,7 @@ export default function AdjustmentsSection({ rec, onAdd, onEdit, onDelete }) {
             <Stack key={a.id} direction="row" sx={{ alignItems: 'flex-start', borderBottom: 1, borderColor: 'divider' }}>
               <ButtonBase
                 onClick={() => onEdit(a)}
+                disabled={readOnly}
                 aria-label={`Edit ${a.name}`}
                 sx={{ flex: 1, minWidth: 0, display: 'block', textAlign: 'left', px: 2, py: 1.5 }}
               >
@@ -73,9 +76,11 @@ export default function AdjustmentsSection({ rec, onAdd, onEdit, onDelete }) {
                   <AllocationSummary item={a} people={people} />
                 </Box>
               </ButtonBase>
-              <IconButton onClick={() => onDelete(a)} aria-label={`Delete ${a.name}`} sx={{ mt: 1, mr: 0.5 }}>
-                <DeleteOutlined fontSize="small" />
-              </IconButton>
+              {!readOnly && (
+                <IconButton onClick={() => onDelete(a)} aria-label={`Delete ${a.name}`} sx={{ mt: 1, mr: 0.5 }}>
+                  <DeleteOutlined fontSize="small" />
+                </IconButton>
+              )}
             </Stack>
           ))}
           <Stack direction="row" sx={{ justifyContent: 'space-between', px: 2, py: 1.5 }}>
@@ -106,12 +111,12 @@ export default function AdjustmentsSection({ rec, onAdd, onEdit, onDelete }) {
                     )}
                   </TableCell>
                   <TableCell>
-                    <AllocationSummary item={a} people={people} onClick={() => onEdit(a)} />
+                    <AllocationSummary item={a} people={people} onClick={readOnly ? undefined : () => onEdit(a)} />
                   </TableCell>
                   <TableCell align="right" sx={num}>
                     {formatINR(a.amountPaise)}
                   </TableCell>
-                  <TableCell align="right" sx={{ whiteSpace: 'nowrap', width: 1 }}>
+                  <TableCell align="right" sx={{ whiteSpace: 'nowrap', width: 1, display: readOnly ? 'none' : undefined }}>
                     <Tooltip title="Edit">
                       <IconButton size="small" onClick={() => onEdit(a)} aria-label={`Edit ${a.name}`}>
                         <EditOutlined fontSize="small" />

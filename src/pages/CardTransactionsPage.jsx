@@ -61,6 +61,7 @@ export default function CardTransactionsPage() {
     addTransactions,
     updateTransaction,
     deleteTransaction,
+    canEdit,
   } = useOutletContext();
   const card = rec.cards.find((c) => c.id === cardId);
 
@@ -171,22 +172,22 @@ export default function CardTransactionsPage() {
           <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
             <SaveStatus status={saveStatus} />
           </Box>
-          <Button
+          {canEdit && <Button
             variant="outlined"
             startIcon={<UploadFileOutlined />}
             onClick={() => setImportKey(Date.now())}
             sx={{ flex: { xs: 1, sm: 'none' } }}
           >
             Import
-          </Button>
-          <Button
+          </Button>}
+          {canEdit && <Button
             variant="contained"
             startIcon={<Add />}
             onClick={() => setEditor({ key: Date.now() })}
             sx={{ flex: { xs: 1, sm: 'none' } }}
           >
             Add transaction
-          </Button>
+          </Button>}
         </Stack>
       </Stack>
 
@@ -202,6 +203,7 @@ export default function CardTransactionsPage() {
             <Stack key={t.id} direction="row" sx={{ alignItems: 'flex-start', borderBottom: 1, borderColor: 'divider' }}>
               <ButtonBase
                 onClick={() => setEditor({ txn: t, key: Date.now() })}
+                disabled={!canEdit}
                 aria-label={`Edit ${t.expenseName}`}
                 sx={{ flex: 1, minWidth: 0, display: 'block', textAlign: 'left', px: 2, py: 1.5 }}
               >
@@ -221,9 +223,11 @@ export default function CardTransactionsPage() {
                   <AllocationSummary item={t} people={rec.people} />
                 </Box>
               </ButtonBase>
-              <IconButton onClick={() => setToDelete(t)} aria-label={`Delete ${t.expenseName}`} sx={{ mt: 1, mr: 0.5 }}>
-                <DeleteOutlined fontSize="small" />
-              </IconButton>
+              {canEdit && (
+                <IconButton onClick={() => setToDelete(t)} aria-label={`Delete ${t.expenseName}`} sx={{ mt: 1, mr: 0.5 }}>
+                  <DeleteOutlined fontSize="small" />
+                </IconButton>
+              )}
             </Stack>
           ))}
           <Stack direction="row" sx={{ justifyContent: 'space-between', px: 2, py: 1.5 }}>
@@ -258,12 +262,12 @@ export default function CardTransactionsPage() {
                     {t.amountPaise < 0 && <Chip size="small" label="Credit" color="success" variant="outlined" sx={{ ml: 1 }} />}
                   </TableCell>
                   <TableCell>
-                    <AllocationSummary item={t} people={rec.people} onClick={() => setEditor({ txn: t, key: Date.now() })} />
+                    <AllocationSummary item={t} people={rec.people} onClick={canEdit ? () => setEditor({ txn: t, key: Date.now() }) : undefined} />
                   </TableCell>
                   <TableCell align="right" sx={{ ...num, color: t.amountPaise < 0 ? 'success.main' : undefined }}>
                     {formatINR(t.amountPaise)}
                   </TableCell>
-                  <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                  <TableCell align="right" sx={{ whiteSpace: 'nowrap', display: canEdit ? undefined : 'none' }}>
                     <Tooltip title="Edit">
                       <IconButton
                         size="small"

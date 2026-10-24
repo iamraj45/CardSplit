@@ -17,7 +17,7 @@ describe('withMe', () => {
 
   it('adds the current user once', () => {
     const next = withMe(rec, user);
-    expect(next.people).toEqual([{ id: 'ak', name: 'Akansha' }, { id: 'p-me', name: 'Abhishek' }]);
+    expect(next.people).toEqual([{ id: 'ak', name: 'Akansha' }, { id: 'p-me', name: 'Abhishek', updatedAt: expect.any(String) }]);
     expect(withMe(next, user)).toBe(next);
   });
 

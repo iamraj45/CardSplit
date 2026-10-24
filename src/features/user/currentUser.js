@@ -1,10 +1,29 @@
-// The person using the app on this device. There is no authentication: the name only lets the app
-// assign expenses to "me" and add me to reconciliations. Kept in localStorage as a per-device
-// convenience; if it is lost, the login page simply asks for the name again.
+// The person using the app. Two modes:
+//   local   — no account: just a name, kept in localStorage; data stays in this browser.
+//   account — signed in with Supabase (email magic link); data syncs. The profile (display name
+//             and a stable person id) is cached in localStorage so the app also starts offline.
+// User shape: { mode, personId, name, userId?, email?, needsProfile? }
 
 import { createContext, useContext } from 'react';
 
 const KEY = 'ccr.currentUser';
+const PROFILE_KEY = (userId) => `ccr.profile.${userId}`;
+
+export function loadCachedProfile(userId) {
+  try {
+    return JSON.parse(localStorage.getItem(PROFILE_KEY(userId)));
+  } catch {
+    return null;
+  }
+}
+
+export function cacheProfile(profile) {
+  try {
+    localStorage.setItem(PROFILE_KEY(profile.id), JSON.stringify(profile));
+  } catch {
+    // not cached: the profile is fetched again next time
+  }
+}
 
 export function loadCurrentUser() {
   try {
@@ -38,11 +57,24 @@ export function findMe(people, user) {
 /** The reconciliation with the current user added to its people, or the same object if already there. */
 export function withMe(rec, user) {
   if (!rec || !user || findMe(rec.people, user)) return rec;
-  return { ...rec, people: [...rec.people, { id: user.personId, name: user.name }] };
+  return { ...rec, people: [...rec.people, { id: user.personId, name: user.name, updatedAt: new Date().toISOString() }] };
 }
 
-/** { user, signIn(name), signOut() } — provided by UserProvider. */
-export const UserContext = createContext({ user: null, signIn: async () => {}, signOut: () => {} });
+/**
+ * Provided by UserProvider:
+ * { user, ready, accountsEnabled, signIn(name), sendSignInEmail(email), verifyCode(email, code),
+ *   completeProfile(name), signOut({ removeData }) }
+ */
+export const UserContext = createContext({
+  user: null,
+  ready: true,
+  accountsEnabled: false,
+  signIn: async () => {},
+  sendSignInEmail: async () => {},
+  verifyCode: async () => {},
+  completeProfile: async () => {},
+  signOut: async () => {},
+});
 
 export function useCurrentUser() {
   return useContext(UserContext);

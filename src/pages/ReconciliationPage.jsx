@@ -18,6 +18,12 @@ import AssessmentOutlined from '@mui/icons-material/AssessmentOutlined';
 import DownloadOutlined from '@mui/icons-material/DownloadOutlined';
 import { exportBackupFile } from '../features/backups/backupActions';
 import UploadFileOutlined from '@mui/icons-material/UploadFileOutlined';
+import GroupOutlined from '@mui/icons-material/GroupOutlined';
+import ShareOutlined from '@mui/icons-material/ShareOutlined';
+import VisibilityOutlined from '@mui/icons-material/VisibilityOutlined';
+import ShareDialog from '../components/ShareDialog';
+import { useSync } from '../features/sync/syncContext';
+import { useCurrentUser } from '../features/user/currentUser';
 import AdjustmentEditor from '../components/AdjustmentEditor';
 import ChecksPanel from '../components/ChecksPanel';
 import { runChecks } from '../services/calculations/checks';
@@ -60,7 +66,11 @@ export default function ReconciliationPage() {
     addAdjustment,
     updateAdjustment,
     deleteAdjustment,
+    access,
+    canEdit,
   } = useOutletContext();
+  const { user } = useCurrentUser();
+  const { enabled: syncEnabled } = useSync();
 
   // Dialog state: { kind: 'details' | 'card' | 'adjustment' | 'import', target?, key }
   const [dialog, setDialog] = useState(null);
@@ -93,17 +103,28 @@ export default function ReconciliationPage() {
             {rec.name}
           </Typography>
           <Chip size="small" label={status.label} color={status.color} />
+          {access.role !== 'owner' && (
+            <Chip size="small" variant="outlined" icon={<GroupOutlined />} label={`Shared by ${access.ownerName ?? 'someone'}`} />
+          )}
+          {!canEdit && <Chip size="small" variant="outlined" icon={<VisibilityOutlined />} label="View only" />}
           <SaveStatus status={saveStatus} />
         </Stack>
-        <Stack direction="row" sx={{ alignItems: 'center', gap: 1, width: { xs: '100%', sm: 'auto' } }}>
-          <Button variant="outlined" startIcon={<EditOutlined />} onClick={() => open('details')} sx={{ flex: { xs: 1, sm: 'none' } }}>
-            Edit
-          </Button>
+        <Stack direction="row" sx={{ alignItems: 'center', gap: 1, flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' } }}>
+          {canEdit && (
+            <Button variant="outlined" startIcon={<EditOutlined />} onClick={() => open('details')} sx={headerButton}>
+              Edit
+            </Button>
+          )}
+          {syncEnabled && (
+            <Button variant="outlined" startIcon={<ShareOutlined />} onClick={() => open('share')} sx={headerButton}>
+              Share
+            </Button>
+          )}
           <Button
             variant="outlined"
             startIcon={<DownloadOutlined />}
             onClick={() => saveNow().then(() => exportBackupFile(rec))}
-            sx={{ flex: { xs: 1, sm: 'none' } }}
+            sx={headerButton}
           >
             Backup
           </Button>
@@ -111,7 +132,7 @@ export default function ReconciliationPage() {
             variant="contained"
             startIcon={<AssessmentOutlined />}
             onClick={() => navigate('report')}
-            sx={{ flex: { xs: 1, sm: 'none' } }}
+            sx={headerButton}
           >
             Report
           </Button>
@@ -154,9 +175,11 @@ export default function ReconciliationPage() {
         <Typography variant="h6" component="h2">
           Cards
         </Typography>
-        <Button variant="outlined" startIcon={<UploadFileOutlined />} onClick={() => open('import')}>
-          Import statement
-        </Button>
+        {canEdit && (
+          <Button variant="outlined" startIcon={<UploadFileOutlined />} onClick={() => open('import')}>
+            Import statement
+          </Button>
+        )}
       </Stack>
 
       <Grid container spacing={2} sx={{ mt: '8px !important' }}>
@@ -169,22 +192,24 @@ export default function ReconciliationPage() {
               difference={cardDifference(rec, card)}
               unassignedCount={unassignedTxns.filter((t) => t.cardId === card.id).length}
               onOpen={() => navigate(`card/${card.id}`)}
-              onEdit={() => open('card', card)}
-              onDelete={() => setCardToDelete(card)}
+              onEdit={canEdit ? () => open('card', card) : undefined}
+              onDelete={canEdit ? () => setCardToDelete(card) : undefined}
             />
           </Grid>
         ))}
-        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-          <Card variant="outlined" sx={{ height: '100%', minHeight: 190, borderStyle: 'dashed', borderRadius: 3 }}>
-            <CardActionArea
-              onClick={() => open('card')}
-              sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 1, color: 'text.secondary' }}
-            >
-              <Add fontSize="large" />
-              <Typography>Add credit card</Typography>
-            </CardActionArea>
-          </Card>
-        </Grid>
+        {canEdit && (
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <Card variant="outlined" sx={{ height: '100%', minHeight: 190, borderStyle: 'dashed', borderRadius: 3 }}>
+              <CardActionArea
+                onClick={() => open('card')}
+                sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 1, color: 'text.secondary' }}
+              >
+                <Add fontSize="large" />
+                <Typography>Add credit card</Typography>
+              </CardActionArea>
+            </Card>
+          </Grid>
+        )}
       </Grid>
 
       {rec.cards.length > 0 && (
@@ -197,6 +222,7 @@ export default function ReconciliationPage() {
         onAddPerson={addPerson}
         onRenamePerson={renamePerson}
         onRemovePerson={removePerson}
+        readOnly={!canEdit}
       />
 
       <AdjustmentsSection
@@ -204,7 +230,24 @@ export default function ReconciliationPage() {
         onAdd={() => open('adjustment')}
         onEdit={(a) => open('adjustment', a)}
         onDelete={setAdjustmentToDelete}
+        readOnly={!canEdit}
       />
+
+      {dialog?.kind === 'share' && (
+        <ShareDialog
+          key={dialog.key}
+          open
+          rec={rec}
+          access={access}
+          currentEmail={user?.email}
+          onLeave={async () => {
+            close();
+            await storage.deleteReconciliation(rec.id); // for non-owners this leaves the share
+            navigate('/');
+          }}
+          onClose={close}
+        />
+      )}
 
       {dialog?.kind === 'import' && (
         <ImportStatementDialog
@@ -289,6 +332,9 @@ export default function ReconciliationPage() {
     </Stack>
   );
 }
+
+// Header actions: side by side on larger screens, a 2×2 grid on phones.
+const headerButton = { flex: { xs: '1 1 40%', sm: 'none' } };
 
 function SummaryFigure({ label, value }) {
   return (

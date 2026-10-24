@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { storage } from '../../services/storage';
+import { onRecordsChanged } from '../../services/storage/events';
 import { deriveStatus } from '../../services/calculations/reconciliation';
-import { createAdjustment, createCard, createPerson, createTransaction, normalizeReconciliation } from '../model';
+import { createAdjustment, createCard, createPerson, createTransaction, normalizeReconciliation, now, touch } from '../model';
 import { withMe } from '../user/currentUser';
 
 const sameName = (a, b) => a.trim().toLowerCase() === b.trim().toLowerCase();
@@ -25,8 +26,12 @@ export function useReconciliation(id, currentUser = null) {
   // People saved on this device for reuse across reconciliations.
   const [savedPeople, setSavedPeople] = useState([]);
 
+  // { role: 'owner' | 'editor' | 'viewer', shared, ownerName } — always owner in local-only mode.
+  const [access, setAccess] = useState({ role: 'owner', shared: false, ownerName: null });
+
   const recRef = useRef(null);
   const savedPeopleRef = useRef([]);
+  const canEditRef = useRef(true);
   const pendingRef = useRef(null); // latest unsaved state
   const savingRef = useRef(false);
 
@@ -55,14 +60,17 @@ export function useReconciliation(id, currentUser = null) {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([storage.getReconciliation(id), storage.listPeople()])
-      .then(([stored, people]) => {
+    Promise.all([storage.getReconciliation(id), storage.listPeople(), storage.getAccess(id)])
+      .then(([stored, people, accessInfo]) => {
         if (cancelled) return;
         const normalized = normalizeReconciliation(stored) ?? null;
-        // Make sure the signed-in person is part of every reconciliation they open.
-        const data = withMe(normalized, currentUser);
+        const editable = accessInfo.role !== 'viewer';
+        // Make sure the signed-in person is part of every reconciliation they can edit.
+        const data = editable ? withMe(normalized, currentUser) : normalized;
         recRef.current = data;
         savedPeopleRef.current = people;
+        canEditRef.current = editable;
+        setAccess(accessInfo);
         setRec(data);
         setSavedPeople(people);
         setLoadState(data ? 'ready' : 'missing');
@@ -80,6 +88,30 @@ export function useReconciliation(id, currentUser = null) {
       flush();
     };
   }, [id, currentUser, flush]);
+
+  // Reload when sync brings in changes from another device or person — unless a local edit is
+  // still being saved, in which case the sync engine merges it and notifies again afterwards.
+  useEffect(
+    () =>
+      onRecordsChanged((ids) => {
+        if (ids && !ids.includes(id)) return;
+        if (pendingRef.current || savingRef.current) return;
+        Promise.all([storage.getReconciliation(id), storage.listPeople(), storage.getAccess(id)]).then(
+          ([stored, people, accessInfo]) => {
+            if (pendingRef.current || savingRef.current) return;
+            const data = normalizeReconciliation(stored) ?? null;
+            recRef.current = data;
+            savedPeopleRef.current = people;
+            canEditRef.current = accessInfo.role !== 'viewer';
+            setAccess(accessInfo);
+            setRec(data);
+            setSavedPeople(people);
+            setLoadState(data ? 'ready' : 'missing');
+          },
+        );
+      }),
+    [id],
+  );
 
   // Warn before leaving while a save is still in flight or has failed.
   useEffect(() => {
@@ -103,7 +135,7 @@ export function useReconciliation(id, currentUser = null) {
   const update = useCallback(
     (fn) => {
       const prev = recRef.current;
-      if (!prev) return;
+      if (!prev || !canEditRef.current) return; // viewers cannot change shared data
       const changed = fn(prev);
       const next = { ...changed, status: deriveStatus(changed) };
       recRef.current = next;
@@ -138,13 +170,13 @@ export function useReconciliation(id, currentUser = null) {
           (input.id && { id: input.id, name }) ||
           savedPeopleRef.current.find((p) => sameName(p.name, name)) ||
           createPerson({ name });
-        update((r) => ({ ...r, people: [...r.people, person] }));
+        update((r) => ({ ...r, people: [...r.people, touch(person)] }));
         rememberPerson(person);
         return person;
       },
       renamePerson: (personId, name) => {
         const person = { id: personId, name: name.trim() };
-        update((r) => ({ ...r, people: r.people.map((p) => (p.id === personId ? person : p)) }));
+        update((r) => ({ ...r, people: r.people.map((p) => (p.id === personId ? touch(person) : p)) }));
         rememberPerson(person);
       },
       /** Callers must check isPersonUsed first; removing a referenced person would orphan splits. */
@@ -158,12 +190,12 @@ export function useReconciliation(id, currentUser = null) {
       updateAdjustment: (adjustmentId, fields) =>
         update((r) => ({
           ...r,
-          adjustments: r.adjustments.map((a) => (a.id === adjustmentId ? { ...a, ...fields } : a)),
+          adjustments: r.adjustments.map((a) => (a.id === adjustmentId ? touch({ ...a, ...fields }) : a)),
         })),
       deleteAdjustment: (adjustmentId) =>
         update((r) => ({ ...r, adjustments: r.adjustments.filter((a) => a.id !== adjustmentId) })),
 
-      updateDetails: (fields) => update((r) => ({ ...r, ...fields })),
+      updateDetails: (fields) => update((r) => ({ ...r, ...fields, detailsUpdatedAt: now() })),
 
       addCard: (fields) => {
         const card = createCard(fields);
@@ -171,7 +203,7 @@ export function useReconciliation(id, currentUser = null) {
         return card;
       },
       updateCard: (cardId, fields) =>
-        update((r) => ({ ...r, cards: r.cards.map((c) => (c.id === cardId ? { ...c, ...fields } : c)) })),
+        update((r) => ({ ...r, cards: r.cards.map((c) => (c.id === cardId ? touch({ ...c, ...fields }) : c)) })),
       deleteCard: (cardId) =>
         update((r) => ({
           ...r,
@@ -193,7 +225,7 @@ export function useReconciliation(id, currentUser = null) {
       updateTransaction: (txnId, fields) =>
         update((r) => ({
           ...r,
-          transactions: r.transactions.map((t) => (t.id === txnId ? { ...t, ...fields } : t)),
+          transactions: r.transactions.map((t) => (t.id === txnId ? touch({ ...t, ...fields }) : t)),
         })),
       deleteTransaction: (txnId) =>
         update((r) => ({ ...r, transactions: r.transactions.filter((t) => t.id !== txnId) })),
@@ -201,5 +233,14 @@ export function useReconciliation(id, currentUser = null) {
     [update, rememberPerson],
   );
 
-  return { rec, loadState, saveStatus, savedPeople, saveNow: flush, ...actions };
+  return {
+    rec,
+    loadState,
+    saveStatus,
+    savedPeople,
+    access,
+    canEdit: access.role !== 'viewer',
+    saveNow: flush,
+    ...actions,
+  };
 }

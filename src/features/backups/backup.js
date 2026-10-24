@@ -65,6 +65,9 @@ function cleanSplit(split, where) {
   };
 }
 
+// Keep an entity's edit time (schema v3) when present; normalizeReconciliation fills in missing ones.
+const stampOf = (e) => (isStr(e.updatedAt) ? { updatedAt: e.updatedAt } : {});
+
 function cleanReconciliation(raw, index) {
   if (!raw || typeof raw !== 'object') fail(`Reconciliation ${index + 1} is not valid.`);
   const label = `Reconciliation “${optStr(raw.name, `#${index + 1}`)}”`;
@@ -81,7 +84,7 @@ function cleanReconciliation(raw, index) {
 
   const people = (raw.people ?? []).map((p, i) => {
     if (!p || !isStr(p.id) || !isStr(p.name) || !p.name.trim()) fail(`${label}: person ${i + 1} is not valid.`);
-    return { id: p.id, name: p.name.trim() };
+    return { id: p.id, name: p.name.trim(), ...stampOf(p) };
   });
 
   const cards = (raw.cards ?? []).map((c, i) => {
@@ -98,6 +101,7 @@ function cleanReconciliation(raw, index) {
       statementEnd: c.statementEnd,
       statementTotalPaise: c.statementTotalPaise,
       gradientKey: optStr(c.gradientKey, 'graphite'),
+      ...stampOf(c),
     };
   });
   const cardIds = new Set(cards.map((c) => c.id));
@@ -117,6 +121,7 @@ function cleanReconciliation(raw, index) {
       amountPaise: t.amountPaise,
       split: cleanSplit(t.split, where),
       source: optStr(t.source, 'manual'),
+      ...stampOf(t),
     };
   });
 
@@ -124,7 +129,7 @@ function cleanReconciliation(raw, index) {
     const where = `${label}, adjustment ${i + 1}`;
     if (!a || !isStr(a.id) || !isStr(a.name)) fail(`${where} is not valid.`);
     if (!isInt(a.amountPaise)) fail(`${where} has an invalid amount.`);
-    return { id: a.id, name: a.name, amountPaise: a.amountPaise, split: cleanSplit(a.split, where), note: optStr(a.note) };
+    return { id: a.id, name: a.name, amountPaise: a.amountPaise, split: cleanSplit(a.split, where), note: optStr(a.note), ...stampOf(a) };
   });
 
   const rec = normalizeReconciliation({
@@ -138,6 +143,7 @@ function cleanReconciliation(raw, index) {
     transactions,
     adjustments,
     reportSettings: raw.reportSettings && typeof raw.reportSettings.itemised === 'boolean' ? { itemised: raw.reportSettings.itemised } : undefined,
+    ...(isStr(raw.detailsUpdatedAt) && { detailsUpdatedAt: raw.detailsUpdatedAt }),
     createdAt: optStr(raw.createdAt, new Date().toISOString()),
     updatedAt: optStr(raw.updatedAt, new Date().toISOString()),
   });
@@ -207,4 +213,17 @@ export function resolvePlan(plan, newId = () => crypto.randomUUID()) {
     }
   }
   return { toSave, counts };
+}
+
+/**
+ * Validate and rebuild one reconciliation from untrusted data (a backup file or the sync server).
+ * Returns { ok: true, rec } or { ok: false, error }.
+ */
+export function validateReconciliation(raw) {
+  try {
+    return { ok: true, rec: cleanReconciliation(raw, 0) };
+  } catch (err) {
+    if (err instanceof BackupError) return { ok: false, error: err.message };
+    throw err;
+  }
 }

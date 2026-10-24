@@ -84,6 +84,39 @@ Requires Node 20.19+ or 22.12+ (Netlify builds with Node 24).
 | `src/features/reconciliations/useReconciliation.js` | Loads a reconciliation and saves every change immediately, one write at a time. |
 | `src/pages/`, `src/components/` | UI. |
 
+## Accounts, sync and sharing (Supabase)
+
+Accounts are optional. Without Supabase settings the app runs local-only, exactly as described above. With them:
+- **Sign-in:** people sign in with an email link (or a 6-digit code from the same email). "Continue without an account" is still available.
+- **Offline-first sync:** reconciliations sync across devices. The app reads and writes a local copy in the browser, so it works offline, and a background sync pushes and pulls changes.
+- **Merging:** when two devices or two people change the same reconciliation, changes are merged per transaction, card, person and adjustment. If the same item was edited on both sides, the later edit wins and a notice says so. The merge logic is in `src/services/sync/merge.js`.
+- **Sharing:** owners invite people by email as editors or viewers. Invited people get access when they sign in with that email.
+- **Moving local data:** after a first sign-in, the app offers to add reconciliations saved locally to the account.
+
+### Setup
+1. Create a Supabase project (the free tier is fine).
+2. Open the **SQL editor** and run `supabase/migrations/0001_init.sql`. It creates the tables, Row Level Security policies, the functions that are the only write path, and Realtime.
+3. Go to **Authentication → URL configuration**:
+   - set **Site URL** to the Netlify URL;
+   - add `http://localhost:5173` to the redirect URLs.
+4. Optional: in **Authentication → Email templates**, add `{{ .Token }}` to the magic-link email so people can type the 6-digit code instead of opening the link.
+5. Copy `.env.example` to `.env.local` and fill in `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (Project Settings → API). In Netlify, add the same two variables under **Site settings → Environment variables**, then redeploy.
+
+The anon key is meant to be public, because every table is protected by Row Level Security. Never put the service-role key in the app.
+
+### Verifying the security rules
+`supabase/tests/rls-check.mjs` signs in as two test users and checks the rules: outsiders can't read or write, viewers can't edit, only owners manage sharing, stale saves are rejected, and leaving and deleting work. Run it against a development project; the setup instructions are at the top of the file.
+
+### Where it lives
+| Path | Purpose |
+|---|---|
+| `src/services/sync/syncEngine.js` | Push, pull, merging, lost-access clean-up |
+| `src/services/sync/merge.js` | Three-way merge |
+| `src/services/sync/remote.js` | Supabase calls |
+| `src/services/storage/syncedStorage.js` | Per-account local cache bookkeeping |
+| `src/features/sync/SyncProvider.jsx` | When sync runs (edits, reconnecting, every minute, live updates) and notices |
+| `src/components/ShareDialog.jsx` | Sharing |
+
 ## Deploying to Netlify
 
 `netlify.toml` already configures the build (`npm run build`, publish `dist`, Node 24), single-page-app routing, security headers, and long-term caching for `/assets`.

@@ -25,6 +25,10 @@ import ReconciliationFormDialog from '../components/ReconciliationFormDialog';
 import { backupIsStale, exportBackupFile, getLastBackupAt } from '../features/backups/backupActions';
 import { createReconciliation } from '../features/model';
 import { useCurrentUser, withMe } from '../features/user/currentUser';
+import { useSync } from '../features/sync/syncContext';
+import { onRecordsChanged } from '../services/storage/events';
+import ExitToAppOutlined from '@mui/icons-material/ExitToAppOutlined';
+import GroupOutlined from '@mui/icons-material/GroupOutlined';
 import { STATUS_LABELS } from '../services/calculations/reconciliation';
 import { storage } from '../services/storage';
 import { formatDate, formatPeriod } from '../utils/dates';
@@ -32,6 +36,7 @@ import { formatDate, formatPeriod } from '../utils/dates';
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { user } = useCurrentUser();
+  const { enabled: synced } = useSync();
   const [items, setItems] = useState(null);
   const [error, setError] = useState(null);
   const [createOpen, setCreateOpen] = useState(0); // non-zero = open; value is the dialog key
@@ -62,6 +67,7 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(refresh, [refresh]);
+  useEffect(() => onRecordsChanged(refresh), [refresh]); // sync brought in changes
 
   const handleCreate = async (fields) => {
     const rec = withMe(createReconciliation(fields), user);
@@ -114,7 +120,7 @@ export default function DashboardPage() {
 
       {error && <Alert severity="error">{error}</Alert>}
 
-      {items?.length > 0 && backupIsStale(lastBackupAt) && (
+      {!synced && items?.length > 0 && backupIsStale(lastBackupAt) && (
         <Alert
           severity="warning"
           action={
@@ -167,20 +173,30 @@ export default function DashboardPage() {
                     </Typography>
                     <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 1 }}>
                       <Chip size="small" label={status.label} color={status.color} />
+                      {r.role && r.role !== 'owner' ? (
+                        <Chip
+                          size="small"
+                          variant="outlined"
+                          icon={<GroupOutlined />}
+                          label={`${r.role === 'viewer' ? 'View only · ' : ''}Shared by ${r.ownerName ?? 'someone'}`}
+                        />
+                      ) : (
+                        r.shared && <Chip size="small" variant="outlined" icon={<GroupOutlined />} label="Shared" />
+                      )}
                       <Typography variant="body2" color="text.secondary">
                         {r.cardCount} card{r.cardCount === 1 ? '' : 's'} · {r.transactionCount} transaction
                         {r.transactionCount === 1 ? '' : 's'}
                       </Typography>
                     </Stack>
                   </CardActionArea>
-                  <Tooltip title="Delete">
+                  <Tooltip title={r.role && r.role !== 'owner' ? 'Leave' : 'Delete'}>
                     <IconButton
                       size="small"
                       onClick={() => setToDelete(r)}
                       sx={{ position: 'absolute', top: 8, right: 8 }}
-                      aria-label={`Delete ${r.name}`}
+                      aria-label={`${r.role && r.role !== 'owner' ? 'Leave' : 'Delete'} ${r.name}`}
                     >
-                      <DeleteOutlined fontSize="small" />
+                      {r.role && r.role !== 'owner' ? <ExitToAppOutlined fontSize="small" /> : <DeleteOutlined fontSize="small" />}
                     </IconButton>
                   </Tooltip>
                 </Card>
@@ -190,11 +206,18 @@ export default function DashboardPage() {
         </Grid>
       )}
 
-      <Alert severity="info" variant="outlined">
-        Your data is saved only in this browser on this device — it is not synced. To move it to another device, use
-        Export backup here and Import backup there.
-        {lastBackupAt && !backupIsStale(lastBackupAt) && ` Last backup: ${formatDate(lastBackupAt.slice(0, 10))}.`}
-      </Alert>
+      {synced ? (
+        <Alert severity="info" variant="outlined">
+          Signed in as {user.email}. Your reconciliations sync to your account and work offline — changes made
+          without a connection sync when you are back online.
+        </Alert>
+      ) : (
+        <Alert severity="info" variant="outlined">
+          Your data is saved only in this browser on this device — it is not synced. To move it to another device, use
+          Export backup here and Import backup there.
+          {lastBackupAt && !backupIsStale(lastBackupAt) && ` Last backup: ${formatDate(lastBackupAt.slice(0, 10))}.`}
+        </Alert>
+      )}
 
       {importOpen !== 0 && (
         <ImportBackupDialog
@@ -236,12 +259,17 @@ export default function DashboardPage() {
 
       <ConfirmDialog
         open={Boolean(toDelete)}
-        title="Delete reconciliation?"
+        title={toDelete?.role && toDelete.role !== 'owner' ? 'Leave shared reconciliation?' : 'Delete reconciliation?'}
         message={
-          toDelete &&
-          `“${toDelete.name}” and all of its ${toDelete.cardCount} card(s) and ${toDelete.transactionCount} transaction(s) will be permanently deleted from this browser.`
+          !toDelete
+            ? ''
+            : toDelete.role && toDelete.role !== 'owner'
+              ? `You will no longer see “${toDelete.name}”. ${toDelete.ownerName ?? 'The owner'} can invite you again.`
+              : `“${toDelete.name}” and all of its ${toDelete.cardCount} card(s) and ${toDelete.transactionCount} transaction(s) will be permanently deleted${
+                  synced ? ' for everyone it is shared with, on all devices.' : ' from this browser.'
+                }`
         }
-        confirmLabel="Delete"
+        confirmLabel={toDelete?.role && toDelete.role !== 'owner' ? 'Leave' : 'Delete'}
         destructive
         onConfirm={handleDelete}
         onClose={() => setToDelete(null)}
